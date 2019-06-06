@@ -19,12 +19,12 @@ func main() {
 		}
 		go func(c net.Conn) {
 			msg := netmsg.New(&c)
-			reqCode := OnRecvHeader(msg)
-			switch reqCode {
-			case packet.REQUEST_CHARACTER_LOGIN:
+			req := OnRecvHeader(msg)
+			switch req {
+			case packet.RequestCharacterLogin:
 				OnRequestCharacterLogin(msg)
 				break
-			case packet.REQUEST_CHARACTER_LIST:
+			case packet.RequestCharacterList:
 				OnRequestCharacterList(msg)
 				break
 			}
@@ -34,7 +34,7 @@ func main() {
 
 func OnRecvHeader(msg *netmsg.NetMsg) uint8 {
 	length := msg.ReadUint16()
-	fmt.Println("\nlogin.packet.len:", length)
+	fmt.Println("\nheader.packet.len:", length)
 
 	reqCode := msg.ReadUint8()
 
@@ -44,15 +44,13 @@ func OnRecvHeader(msg *netmsg.NetMsg) uint8 {
 	protocolVersion := msg.ReadUint16()
 	if protocolVersion != 740 {
 		packet.SendDisconnect(msg, "Only protocol 7.40 allowed!")
-		fmt.Println("login.protocol: invalid")
 		return 0
 	}
-	fmt.Println("login.protocol:", protocolVersion)
 	return reqCode
 }
 
 func OnRequestCharacterList(msg *netmsg.NetMsg) {
-	fmt.Println("[REQUEST_CHARACTER_LIST]")
+	fmt.Println("[OnRequestCharacterList]")
 
 	msg.SkipBytes(12)
 	// msg.ReadUint32() // Tibia.spr version
@@ -70,7 +68,7 @@ func OnRequestCharacterList(msg *netmsg.NetMsg) {
 }
 
 func OnRequestCharacterLogin(msg *netmsg.NetMsg) {
-	fmt.Println("[REQUEST_CHARACTER_LOGIN]")
+	fmt.Println("[OnRequestCharacterLogin]")
 	msg.SkipBytes(1) // ???
 
 	acc := msg.ReadUint32()
