@@ -1,6 +1,8 @@
 package packet
 
-import "github.com/rwxsu/goot/netmsg"
+import (
+	"github.com/rwxsu/goot/netmsg"
+)
 
 const (
 	INFO_OS_WINDOWS = 0x02
@@ -19,7 +21,6 @@ const (
 
 func SendDisconnect(msg *netmsg.NetMsg, str string) {
 	msg.ResetWriter()
-	msg.WriteUint16((uint16)(len(str) + 3))
 	msg.WriteUint8(RESPONSE_DISCONNECT)
 	msg.WriteString(str)
 	msg.Send()
@@ -33,18 +34,6 @@ func SendCharacterList(msg *netmsg.NetMsg) {
 	world := "GoOT"
 	charName := "rwxsu"
 
-	// TODO: make use of msg.OutPacketSize() instead of having to allocate packet size manually.
-	// Problem: msg.OutPacketSize() is correct only after everything has been written to msg.writer,
-	//			therefore we need to find a function to write at a specific position: [0:2] to alter
-	//			packet size after everything has been written to msg.writer and before msg.Send()
-	//
-	// + 6 bytes = uint16 strlen for all three strings
-	// + 2 for uint8 RESPONSE_MESSAGE_OF_THE_DAY and uint8 RESPONSE_CHARACTER_LIST
-	// + 1 for character count
-	// + 8 for IP and port
-	packetSize := len(motd) + len(charName) + len(world) + 6 + 2 + 1 + 8
-
-	msg.WriteUint16((uint16)(packetSize))
 	msg.WriteUint8(RESPONSE_MESSAGE_OF_THE_DAY)
 	msg.WriteString(motd)
 
@@ -60,6 +49,5 @@ func SendCharacterList(msg *netmsg.NetMsg) {
 	msg.WriteUint16(7171) // Port to send login packet to (usually game port 7172)
 
 	msg.WriteUint16(0x00) // Premium days
-
 	msg.Send()
 }

@@ -1,8 +1,10 @@
 package netmsg
 
-import "encoding/binary"
-import "bufio"
-import "net"
+import (
+	"bufio"
+	"encoding/binary"
+	"net"
+)
 
 func New(c *net.Conn) *NetMsg {
 	return &NetMsg{
@@ -16,6 +18,7 @@ type NetMsg struct {
 	conn   *net.Conn
 	reader *bufio.Reader
 	writer *bufio.Writer
+	buf    []byte
 }
 
 func (msg *NetMsg) SkipBytes(n int) {
@@ -57,7 +60,7 @@ func (msg *NetMsg) ResetReader() {
 }
 
 func (msg *NetMsg) WriteUint8(b byte) {
-	msg.writer.WriteByte(b)
+	msg.buf = append(msg.buf, b)
 }
 
 func (msg *NetMsg) WriteUint16(i uint16) {
@@ -85,14 +88,15 @@ func (msg *NetMsg) WriteString(s string) {
 
 func (msg *NetMsg) ResetWriter() {
 	msg.writer.Reset(*msg.conn)
-}
-
-// OutPacketSize contains the number of bytes written to msg.writer
-// minus the 2 first bytes for the packet size
-func (msg *NetMsg) OutPacketSize() uint16 {
-	return (uint16)(msg.writer.Buffered() - 2)
+	msg.buf = make([]byte, 2) // Reset packet size
 }
 
 func (msg *NetMsg) Send() {
+	packetSize := (uint16)(len(msg.buf) - 2)
+	binary.LittleEndian.PutUint16(msg.buf[0:2], packetSize)
+	var i uint16
+	for i = 0; i < packetSize+2; i++ {
+		msg.writer.WriteByte(msg.buf[i])
+	}
 	msg.writer.Flush()
 }
