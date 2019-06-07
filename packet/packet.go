@@ -1,43 +1,43 @@
 package packet
 
 import (
+	"fmt"
+
+	"github.com/rwxsu/goot/constant"
+	"github.com/rwxsu/goot/game"
 	"github.com/rwxsu/goot/netmsg"
 )
 
-const (
-	InfoFreePremium         = 0x00
-	InfoOsWindows           = 0x02
-	RequestCharacterList    = 0x01
-	RequestCharacterLogin   = 0x0A
-	ResponseDisconnect      = 0x0A
-	ResponseMessageOfTheDay = 0x14
-	ResponseCharacterList   = 0x64
-)
-
-func SendDisconnect(msg *netmsg.NetMsg, str string) {
+func SendMessage(msg *netmsg.NetMsg, kind byte, str string) {
 	msg.ResetWriter()
-	msg.WriteUint8(ResponseDisconnect)
+	msg.WriteUint8(kind)
 	msg.WriteString(str)
 	msg.Send()
 }
 
-func SendCharacterList(msg *netmsg.NetMsg) {
+func SendCharacterList(msg *netmsg.NetMsg, info *game.Info, characters []game.Character) {
 	msg.ResetWriter()
 
-	msg.WriteUint8(ResponseMessageOfTheDay)
+	msg.WriteUint8(constant.ResponseMOTD)
 	msg.WriteString("Welcome to GoOT!")
 
-	msg.WriteUint8(ResponseCharacterList)
-	msg.WriteUint8(0x01) // Character count
+	msg.WriteUint8(constant.ResponseCharList)
+	msg.WriteUint8((byte)(len(characters))) // Character count
 
-	msg.WriteString("rwxsu")
-	msg.WriteString("world")
-	msg.WriteUint8(127)   // IP 127
-	msg.WriteUint8(0)     // 0
-	msg.WriteUint8(0)     // 0
-	msg.WriteUint8(1)     // 1
-	msg.WriteUint16(7171) // Port to send login packet to (usually game port 7172)
+	for i := 0; i < len(characters); i++ {
+		msg.WriteString(characters[i].Name)
+		msg.WriteString(info.World)
+		msg.WriteUint8(127) // IP 127.0.0.1
+		msg.WriteUint8(0)
+		msg.WriteUint8(0)
+		msg.WriteUint8(1)
+		msg.WriteUint16(7171) // Port to send login packet to (usually game port 7172)
+	}
 
-	msg.WriteUint16(InfoFreePremium)
+	msg.WriteUint16(constant.FreePremium)
 	msg.Send()
+}
+
+func SendCharacterLogin(msg *netmsg.NetMsg, character *game.Character) {
+	SendMessage(msg, constant.MessageBoxInfo, fmt.Sprintf("Welcome, %s!", character.Name))
 }

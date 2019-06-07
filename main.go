@@ -1,11 +1,23 @@
 package main
 
-import "fmt"
-import "net"
-import "github.com/rwxsu/goot/netmsg"
-import "github.com/rwxsu/goot/packet"
+import (
+	"fmt"
+	"net"
+
+	"github.com/rwxsu/goot/game"
+
+	"github.com/rwxsu/goot/constant"
+	"github.com/rwxsu/goot/netmsg"
+	"github.com/rwxsu/goot/packet"
+)
 
 func main() {
+	fmt.Printf(":: Loading game info ")
+	info := game.Info{
+		World: "world",
+	}
+	fmt.Println("[done]")
+
 	l, err := net.Listen("tcp", ":7171")
 	if err != nil {
 		fmt.Println(err)
@@ -21,11 +33,11 @@ func main() {
 			msg := netmsg.New(&c)
 			req := OnRecvHeader(msg)
 			switch req {
-			case packet.RequestCharacterLogin:
-				OnRequestCharacterLogin(msg)
+			case constant.RequestCharacterLogin:
+				OnRequestCharacterLogin(msg, &info)
 				break
-			case packet.RequestCharacterList:
-				OnRequestCharacterList(msg)
+			case constant.RequestCharacterList:
+				OnRequestCharacterList(msg, &info)
 				break
 			}
 		}(conn)
@@ -33,51 +45,46 @@ func main() {
 }
 
 func OnRecvHeader(msg *netmsg.NetMsg) uint8 {
-	length := msg.ReadUint16()
-	fmt.Println("\nheader.packet.len:", length)
-
+	fmt.Println("\nheader.packet.len:", msg.ReadUint16())
 	reqCode := msg.ReadUint8()
-
-	// os := msg.ReadUint16()
-	msg.SkipBytes(2)
-
-	protocolVersion := msg.ReadUint16()
-	if protocolVersion != 740 {
-		packet.SendDisconnect(msg, "Only protocol 7.40 allowed!")
+	msg.SkipBytes(2) // os := msg.ReadUint16()
+	if msg.ReadUint16() != 740 {
+		packet.SendMessage(msg, constant.MessageBoxSorry, "Only protocol 7.40 allowed!")
 		return 0
 	}
 	return reqCode
 }
 
-func OnRequestCharacterList(msg *netmsg.NetMsg) {
+func OnRequestCharacterList(msg *netmsg.NetMsg, info *game.Info) {
 	fmt.Println("[OnRequestCharacterList]")
-
 	msg.SkipBytes(12)
 	// msg.ReadUint32() // Tibia.spr version
 	// msg.ReadUint32() // Tibia.dat version
 	// msg.ReadUint32() // Tibia.pic version
-
 	acc := msg.ReadUint32()
 	pwd := msg.ReadString()
 	fmt.Println("login.acc:", acc)
 	fmt.Println("login.pwd:", pwd)
-
-	// TODO: Authenticate
-	// packet.SendCharacterList(msg, characters)
-	packet.SendCharacterList(msg)
+	// TODO: Authenticate and retrieve characters
+	// Dummy character list
+	characters := make([]game.Character, 2)
+	characters[0].Name = "rwxsu"
+	characters[1].Name = "Test"
+	packet.SendCharacterList(msg, info, characters)
 }
 
-func OnRequestCharacterLogin(msg *netmsg.NetMsg) {
+func OnRequestCharacterLogin(msg *netmsg.NetMsg, info *game.Info) {
 	fmt.Println("[OnRequestCharacterLogin]")
-	msg.SkipBytes(1) // ???
-
+	msg.SkipBytes(1)
 	acc := msg.ReadUint32()
 	name := msg.ReadString()
 	pwd := msg.ReadString()
 	fmt.Printf("login.acc: %d\n", acc)
 	fmt.Printf("login.pwd: %s\n", pwd)
 	fmt.Printf("login.character.name: %s\n", name)
-
 	// TODO: Authenticate
-	// packet.SendCharacterLogin(msg, character)
+	character := game.Character{
+		Name: name,
+	}
+	packet.SendCharacterLogin(msg, &character)
 }
