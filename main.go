@@ -2,89 +2,82 @@ package main
 
 import (
 	"fmt"
+	"log"
 	"net"
 
 	"github.com/rwxsu/goot/game"
-
-	"github.com/rwxsu/goot/constant"
-	"github.com/rwxsu/goot/netmsg"
-	"github.com/rwxsu/goot/packet"
+	"github.com/rwxsu/goot/network"
 )
 
 func main() {
-	fmt.Printf(":: Loading game info ")
-	info := game.Info{
-		World: "world",
-	}
-	fmt.Println("[done]")
-
 	l, err := net.Listen("tcp", ":7171")
 	if err != nil {
-		fmt.Println(err)
+		panic(err)
 	}
 	defer l.Close()
 	for {
-		conn, err := l.Accept()
+		c, err := l.Accept()
 		if err != nil {
-			fmt.Println(err)
+			log.Println(err)
 			continue
 		}
-		go func(c net.Conn) {
-			msg := netmsg.New(&c)
-			req := OnRecvHeader(msg)
-			switch req {
-			case constant.RequestCharacterLogin:
-				OnRequestCharacterLogin(msg, &info)
-				break
-			case constant.RequestCharacterList:
-				OnRequestCharacterList(msg, &info)
-				break
+		go func(c *net.Conn) {
+			req := network.RecvPacket(c)
+			req.HexDump("request")
+			code := req.ReadUint8()
+			req.SkipBytes(2) // os := req.ReadUint16()
+			if req.ReadUint16() != 740 {
+				res := network.NewPacket()
+				res.WriteUint8(0x0a)
+				res.WriteString("Only protocol 7.40 allowed!")
+				network.SendPacket(c, res)
+				res.HexDump("response")
+				return
 			}
-		}(conn)
+			switch code {
+			case 0x01: // request character list
+				req.ReadUint32() // Tibia.spr version
+				req.ReadUint32() // Tibia.dat version
+				req.ReadUint32() // Tibia.pic version
+				req.ReadUint32() // acc
+				req.ReadString() // pwd
+				characters := make([]game.Character, 2)
+				characters[0].Name = "admin"
+				characters[0].World.Name = "test"
+				characters[0].World.Port = 7171
+				characters[1].Name = "rwxsu"
+				characters[1].World.Name = "test"
+				characters[1].World.Port = 7171
+				res := network.NewPacket()
+				res.WriteUint8(0x14) // MOTD
+				res.WriteString("Welcome to GoOT.")
+				res.WriteUint8(0x64) // character list
+				res.WriteUint8((uint8)(len(characters)))
+				for i := 0; i < len(characters); i++ {
+					res.WriteString(characters[i].Name)
+					res.WriteString(characters[i].World.Name)
+					res.WriteUint8(127)
+					res.WriteUint8(0)
+					res.WriteUint8(0)
+					res.WriteUint8(1)
+					res.WriteUint16(characters[i].World.Port)
+				}
+				res.WriteUint16(0) // premium days
+				network.SendPacket(c, res)
+				res.HexDump("response")
+				return
+			case 0x0a: // request character login
+				req.SkipBytes(1) // ?
+				req.ReadUint32() // acc
+				name := req.ReadString()
+				req.ReadString() // pwd
+				res := network.NewPacket()
+				res.WriteUint8(0x15) // FYI
+				res.WriteString(fmt.Sprintf("Welcome, %s!", name))
+				network.SendPacket(c, res)
+				res.HexDump("response")
+				return
+			}
+		}(&c)
 	}
-}
-
-func OnRecvHeader(msg *netmsg.NetMsg) uint8 {
-	fmt.Println("\nheader.packet.len:", msg.ReadUint16())
-	reqCode := msg.ReadUint8()
-	msg.SkipBytes(2) // os := msg.ReadUint16()
-	if msg.ReadUint16() != 740 {
-		packet.SendMessage(msg, constant.MessageBoxSorry, "Only protocol 7.40 allowed!")
-		return 0
-	}
-	return reqCode
-}
-
-func OnRequestCharacterList(msg *netmsg.NetMsg, info *game.Info) {
-	fmt.Println("[OnRequestCharacterList]")
-	msg.SkipBytes(12)
-	// msg.ReadUint32() // Tibia.spr version
-	// msg.ReadUint32() // Tibia.dat version
-	// msg.ReadUint32() // Tibia.pic version
-	acc := msg.ReadUint32()
-	pwd := msg.ReadString()
-	fmt.Println("login.acc:", acc)
-	fmt.Println("login.pwd:", pwd)
-	// TODO: Authenticate and retrieve characters
-	// Dummy character list
-	characters := make([]game.Character, 2)
-	characters[0].Name = "rwxsu"
-	characters[1].Name = "Test"
-	packet.SendCharacterList(msg, info, characters)
-}
-
-func OnRequestCharacterLogin(msg *netmsg.NetMsg, info *game.Info) {
-	fmt.Println("[OnRequestCharacterLogin]")
-	msg.SkipBytes(1)
-	acc := msg.ReadUint32()
-	name := msg.ReadString()
-	pwd := msg.ReadString()
-	fmt.Printf("login.acc: %d\n", acc)
-	fmt.Printf("login.pwd: %s\n", pwd)
-	fmt.Printf("login.character.name: %s\n", name)
-	// TODO: Authenticate
-	character := game.Character{
-		Name: name,
-	}
-	packet.SendCharacterLogin(msg, &character)
 }

@@ -1,5 +1,6 @@
 package game
 
 type Character struct {
-	Name string
+	Name  string
+	World World
 }
