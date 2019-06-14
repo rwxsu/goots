@@ -1,5 +1,5 @@
 package game
 
-type Tile struct {
+type Item struct {
 	ID uint16
 }

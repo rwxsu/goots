@@ -5,11 +5,12 @@ import (
 	"log"
 	"net"
 
-	"github.com/rwxsu/goot/game"
-	"github.com/rwxsu/goot/network"
+	"github.com/rwxsu/goot/source/game"
+	"github.com/rwxsu/goot/source/network"
 )
 
 func main() {
+
 	l, err := net.Listen("tcp", ":7171")
 	if err != nil {
 		panic(err)
