@@ -58,6 +58,15 @@ func (p *Packet) WriteUint16(v uint16) {
 	p.WriteUint8(bytes[1])
 }
 
+func (p *Packet) WriteUint32(v uint32) {
+	bytes := make([]uint8, 4)
+	binary.LittleEndian.PutUint32(bytes, v)
+	p.WriteUint8(bytes[0])
+	p.WriteUint8(bytes[1])
+	p.WriteUint8(bytes[2])
+	p.WriteUint8(bytes[3])
+}
+
 func (p *Packet) WriteString(str string) {
 	p.WriteUint16((uint16)(len(str)))
 	for i := 0; i < len(str); i++ {
