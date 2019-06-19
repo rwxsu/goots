@@ -6,37 +6,37 @@ import (
 	"fmt"
 )
 
-type Packet struct {
+type Message struct {
 	Buffer []uint8
 	Cursor uint16
 }
 
-func NewPacket() *Packet {
-	var p Packet
+func NewMessage() *Message {
+	var p Message
 	p.Buffer = make([]uint8, 2)
 	p.Cursor = 2
 	return &p
 }
 
-func (p *Packet) ReadUint8() uint8 {
+func (p *Message) ReadUint8() uint8 {
 	v := p.Buffer[p.Cursor]
 	p.Cursor++
 	return v
 }
 
-func (p *Packet) ReadUint16() uint16 {
+func (p *Message) ReadUint16() uint16 {
 	v := binary.LittleEndian.Uint16(p.Buffer[p.Cursor : p.Cursor+2])
 	p.Cursor += 2
 	return v
 }
 
-func (p *Packet) ReadUint32() uint32 {
+func (p *Message) ReadUint32() uint32 {
 	v := binary.LittleEndian.Uint32(p.Buffer[p.Cursor : p.Cursor+4])
 	p.Cursor += 4
 	return v
 }
 
-func (p *Packet) ReadString() string {
+func (p *Message) ReadString() string {
 	var str string
 	strlen := p.ReadUint16()
 	for i := (uint16)(0); i < strlen; i++ {
@@ -45,20 +45,20 @@ func (p *Packet) ReadString() string {
 	return str
 }
 
-func (p *Packet) WriteUint8(v uint8) {
+func (p *Message) WriteUint8(v uint8) {
 	p.Buffer = append(p.Buffer, v)
 	binary.LittleEndian.PutUint16(p.Buffer[0:2], (uint16)(len(p.Buffer)-2))
 	p.Cursor++
 }
 
-func (p *Packet) WriteUint16(v uint16) {
+func (p *Message) WriteUint16(v uint16) {
 	bytes := make([]uint8, 2)
 	binary.LittleEndian.PutUint16(bytes, v)
 	p.WriteUint8(bytes[0])
 	p.WriteUint8(bytes[1])
 }
 
-func (p *Packet) WriteUint32(v uint32) {
+func (p *Message) WriteUint32(v uint32) {
 	bytes := make([]uint8, 4)
 	binary.LittleEndian.PutUint32(bytes, v)
 	p.WriteUint8(bytes[0])
@@ -67,21 +67,21 @@ func (p *Packet) WriteUint32(v uint32) {
 	p.WriteUint8(bytes[3])
 }
 
-func (p *Packet) WriteString(str string) {
+func (p *Message) WriteString(str string) {
 	p.WriteUint16((uint16)(len(str)))
 	for i := 0; i < len(str); i++ {
 		p.WriteUint8((uint8)(str[i]))
 	}
 }
 
-func (p *Packet) Length() uint16 {
+func (p *Message) Length() uint16 {
 	return binary.LittleEndian.Uint16(p.Buffer[0:2])
 }
 
-func (p *Packet) SkipBytes(n uint16) {
+func (p *Message) SkipBytes(n uint16) {
 	p.Cursor += n
 }
 
-func (p *Packet) HexDump(prefix string) {
+func (p *Message) HexDump(prefix string) {
 	fmt.Printf("\n[%s]\n%s", prefix, hex.Dump(p.Buffer))
 }
