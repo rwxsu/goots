@@ -64,6 +64,21 @@ func (m *Map) GetTile(pos Position) *Tile {
 	return (*m)[spos][pos.X%32][pos.Y%32]
 }
 
+func (m *Map) GetSpectators(pos Position) []*Creature {
+	pos.X = pos.X - 8
+	pos.Y = pos.Y - 6
+	var spectators []*Creature
+	for x := (uint16)(0); x < 18; x++ {
+		for y := (uint16)(0); y < 14; y++ {
+			tile := m.GetTile(pos)
+			if tile != nil {
+				spectators = append(spectators, tile.Creatures...)
+			}
+		}
+	}
+	return spectators
+}
+
 func (m *Map) LoadSector(filename string) {
 	var p parser.Parser
 	p.Filename = filename
@@ -71,7 +86,7 @@ func (m *Map) LoadSector(filename string) {
 	x, _ := strconv.Atoi(p.Filename[dirOffset+0 : dirOffset+4])
 	y, _ := strconv.Atoi(p.Filename[dirOffset+5 : dirOffset+9])
 	z, _ := strconv.Atoi(p.Filename[dirOffset+10 : dirOffset+12])
-	fmt.Printf("Loading %04d-%04d-%02d.sec ", x, y, z)
+	fmt.Printf(":: Loading %04d-%04d-%02d.sec ", x, y, z)
 	begin := time.Now()
 
 	if fileBytes, err := ioutil.ReadFile(p.Filename); err == nil {
