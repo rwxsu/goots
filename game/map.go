@@ -4,6 +4,7 @@ import (
 	"bytes"
 	"fmt"
 	"io/ioutil"
+	"path/filepath"
 	"strconv"
 	"time"
 
@@ -66,9 +67,10 @@ func (m *Map) GetTile(pos Position) *Tile {
 func (m *Map) LoadSector(filename string) {
 	var p parser.Parser
 	p.Filename = filename
-	x, _ := strconv.Atoi(p.Filename[0:4])
-	y, _ := strconv.Atoi(p.Filename[5:9])
-	z, _ := strconv.Atoi(p.Filename[10:12])
+	dirOffset := len(filepath.Dir(p.Filename)) + 1
+	x, _ := strconv.Atoi(p.Filename[dirOffset+0 : dirOffset+4])
+	y, _ := strconv.Atoi(p.Filename[dirOffset+5 : dirOffset+9])
+	z, _ := strconv.Atoi(p.Filename[dirOffset+10 : dirOffset+12])
 	fmt.Printf("Loading %04d-%04d-%02d.sec ", x, y, z)
 	begin := time.Now()
 
@@ -95,10 +97,11 @@ func (m *Map) LoadSector(filename string) {
 				}
 				break
 			default:
-				panic("OOOOPS")
+				panic("in LoadSector: could not get item ids")
 			}
 			(*m)[spos][offsetX][offsetY] = &tile
 		}
 	}
+
 	fmt.Printf("[%v]\n", time.Since(begin))
 }

@@ -3,6 +3,7 @@ package main
 import (
 	"log"
 	"net"
+	"path/filepath"
 
 	"github.com/rwxsu/goot/game"
 	"github.com/rwxsu/goot/network"
@@ -11,10 +12,13 @@ import (
 func main() {
 	m := make(game.Map)
 
-	m.LoadSector("0999-0999-07.sec")
-	m.LoadSector("1000-0999-07.sec")
-	m.LoadSector("0999-1000-07.sec")
-	m.LoadSector("1000-1000-07.sec")
+	filenames, err := filepath.Glob("data/map/sectors/*")
+	if err != nil {
+		panic(err)
+	}
+	for _, fn := range filenames {
+		m.LoadSector(fn)
+	}
 
 	l, err := net.Listen("tcp", ":7171")
 	if err != nil {
