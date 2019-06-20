@@ -18,25 +18,41 @@ func NewMessage() *Message {
 	return &p
 }
 
+func (p *Message) overflow() bool {
+	return p.Cursor >= (uint16)(len(p.Buffer))
+}
+
 func (p *Message) ReadUint8() uint8 {
+	if p.overflow() {
+		return 0
+	}
 	v := p.Buffer[p.Cursor]
 	p.Cursor++
 	return v
 }
 
 func (p *Message) ReadUint16() uint16 {
+	if p.overflow() {
+		return 0
+	}
 	v := binary.LittleEndian.Uint16(p.Buffer[p.Cursor : p.Cursor+2])
 	p.Cursor += 2
 	return v
 }
 
 func (p *Message) ReadUint32() uint32 {
+	if p.overflow() {
+		return 0
+	}
 	v := binary.LittleEndian.Uint32(p.Buffer[p.Cursor : p.Cursor+4])
 	p.Cursor += 4
 	return v
 }
 
 func (p *Message) ReadString() string {
+	if p.overflow() {
+		return ""
+	}
 	var str string
 	strlen := p.ReadUint16()
 	for i := (uint16)(0); i < strlen; i++ {

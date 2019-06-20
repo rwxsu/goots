@@ -62,4 +62,5 @@ type Creature struct {
 	Fishing   Skill
 	Light     Light
 	Icons     uint8
+	FightMode uint8
 }

@@ -8,6 +8,69 @@ import (
 	"github.com/rwxsu/goot/game"
 )
 
+func ParsePacket(c *net.Conn, player *game.Creature, m *game.Map, code uint8) {
+	switch code {
+	case 0x65:
+		SendMove(c, player, m, game.North)
+		break
+	case 0x66:
+		SendMove(c, player, m, game.East)
+		break
+	case 0x67:
+		SendMove(c, player, m, game.South)
+		break
+	case 0x68:
+		SendMove(c, player, m, game.West)
+		break
+	default:
+		fmt.Println(":: Received unknown packet")
+	}
+}
+
+func SendMove(c *net.Conn, player *game.Creature, m *game.Map, direction uint8) {
+	msg := NewMessage()
+	msg.WriteUint8(0x6d)
+	AddPosition(msg, player.Position)
+	msg.WriteUint8(0x01) // oldStackPos?
+	switch direction {
+	case game.North:
+		player.Position.Y--
+		AddPosition(msg, player.Position)
+		AddMapDescription(msg, player.Position, m)
+		break
+	case game.South:
+		player.Position.Y++
+		AddPosition(msg, player.Position)
+		AddMapDescription(msg, player.Position, m)
+		break
+	case game.East:
+		player.Position.X++
+		AddPosition(msg, player.Position)
+		AddMapDescription(msg, player.Position, m)
+		break
+	case game.West:
+		player.Position.X--
+		AddPosition(msg, player.Position)
+		AddMapDescription(msg, player.Position, m)
+		break
+	}
+	SendMessage(c, msg)
+}
+
+func ValidateClientVersion(c *net.Conn, req *Message) bool {
+	req.SkipBytes(2) // os := req.ReadUint16()
+	if req.ReadUint16() != 740 {
+		res := NewMessage()
+		res.WriteUint8(0x0a)
+		res.WriteString("Only protocol 7.40 allowed!")
+		SendMessage(c, res)
+		res.HexDump("response")
+		(*c).Close()
+		return false
+	}
+	return true
+}
+
 func AddCreatureLight(msg *Message, c *game.Creature) {
 	msg.WriteUint8(0x8d)
 	msg.WriteUint32(c.ID)
@@ -182,7 +245,7 @@ func AddTile(msg *Message, tile *game.Tile) {
 	msg.WriteUint16(0xff00)
 }
 
-func ParseCharacterList(c *net.Conn) {
+func SendCharacterList(c *net.Conn) {
 	characters := make([]game.Creature, 2)
 	characters[0].Name = "admin"
 	characters[0].World.Name = "test"
