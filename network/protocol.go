@@ -13,7 +13,7 @@ const (
 	PlayerMessageTypeCancel uint8 = 0x17
 )
 
-func ParseCommand(c *net.Conn, player *game.Creature, m *game.Map, code uint8) {
+func ParseCommand(c *net.Conn, msg *Message, player *game.Creature, m *game.Map, code uint8) {
 	switch code {
 	case 0x65:
 		if !SendCreatureMove(c, player, m, game.North) {
@@ -34,6 +34,11 @@ func ParseCommand(c *net.Conn, player *game.Creature, m *game.Map, code uint8) {
 		if !SendCreatureMove(c, player, m, game.West) {
 			SendSnapback(c, player)
 		}
+		return
+	case 0xa0:
+		player.Tactic.FightMode = msg.ReadUint8()
+		player.Tactic.ChaseOpponent = msg.ReadUint8()
+		player.Tactic.AttackPlayers = msg.ReadUint8()
 		return
 	default:
 		SendSnapback(c, player)

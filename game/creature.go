@@ -29,6 +29,23 @@ const (
 	SlotNotEmpty uint8 = 0x78
 )
 
+// Tactic contains the user selected options right of equipment slots in client
+type Tactic struct {
+	// Fight modes
+	// 1 - Offensive fighting
+	// 2 - Balanced fighting
+	// 3 - Defensive fighting
+	FightMode uint8
+
+	// 0 - Stand while fighting
+	// 1 - Chase opponent
+	ChaseOpponent uint8
+
+	// 0 - You cannot attack unmarked players
+	// 1 - You can attack any player
+	AttackPlayers uint8
+}
+
 type Skill struct {
 	Experience uint32 // tries
 	Level      uint8
@@ -70,5 +87,5 @@ type Creature struct {
 	Fishing   Skill
 	Light     Light
 	Icons     uint8
-	FightMode uint8
+	Tactic    Tactic
 }

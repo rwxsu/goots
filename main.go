@@ -95,7 +95,7 @@ func main() {
 			case 0x14: // logout
 				break
 			default:
-				network.ParseCommand(c, &player, &m, code)
+				network.ParseCommand(c, req, &player, &m, code)
 				return
 			}
 			(*c).Close()
