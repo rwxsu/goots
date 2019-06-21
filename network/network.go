@@ -4,6 +4,10 @@ import (
 	"net"
 )
 
+const debug = true
+
+// RecvMessage reads the incoming message length (first two bytes), followed by
+// how many bytes the incoming message length is.
 func RecvMessage(c *net.Conn) *Message {
 	msg := NewMessage()
 	(*c).Read(msg.Buffer[0:2]) // incoming message length
@@ -13,9 +17,16 @@ func RecvMessage(c *net.Conn) *Message {
 	bytes := make([]uint8, msg.Length())
 	(*c).Read(bytes)
 	msg.Buffer = append(msg.Buffer, bytes...)
+	if debug {
+		msg.HexDump("recv")
+	}
 	return msg
 }
 
-func SendMessage(c *net.Conn, msg *Message) {
-	(*c).Write(msg.Buffer)
+// SendMessage sends a message to the given connection.
+func SendMessage(dest *net.Conn, msg *Message) {
+	(*dest).Write(msg.Buffer)
+	if debug {
+		msg.HexDump("send")
+	}
 }

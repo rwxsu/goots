@@ -1,7 +1,6 @@
 package main
 
 import (
-	"fmt"
 	"log"
 	"net"
 	"path/filepath"
@@ -52,6 +51,7 @@ func main() {
 		Icons: 1,
 		Light: game.Light{0x7, 0xd7},
 		World: game.World{Light: game.Light{0x00, 0xd7}},
+		Speed: 70,
 	}
 
 	l, err := net.Listen("tcp", ":7171")
@@ -66,34 +66,36 @@ func main() {
 		return
 	}
 
-	// break: creates new listener
-	// return: continues on same listener
 	for {
 		func(c *net.Conn) {
-			// fmt.Println("\n[waiting]")
 			req := network.RecvMessage(c)
 			if req == nil {
 				return
 			}
+			// break: closes current connection and listens for new connection
+			// return: continues on same connection
 			code := req.ReadUint8()
-			req.HexDump(fmt.Sprintf("request code=0x%02x", code))
 			switch code {
 			case 0x01: // request character list
-				if !network.ValidateClientVersion(c, req) {
+				req.SkipBytes(2) // os := req.ReadUint16()
+				if req.ReadUint16() != 740 {
+					network.SendInvalidClientVersion(c)
 					break
 				}
 				network.SendCharacterList(c)
 				break
 			case 0x0a: // request character login
-				if !network.ValidateClientVersion(c, req) {
-					return
+				req.SkipBytes(2) // os := req.ReadUint16()
+				if req.ReadUint16() != 740 {
+					network.SendInvalidClientVersion(c)
+					break
 				}
 				network.SendAddCreature(c, &player, &m)
 				return
 			case 0x14: // logout
 				break
 			default:
-				network.ParsePacket(c, &player, &m, code)
+				network.ParseCommand(c, &player, &m, code)
 				return
 			}
 			(*c).Close()

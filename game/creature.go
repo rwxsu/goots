@@ -15,8 +15,8 @@ const (
 	SlotNecklace
 	SlotBackpack
 	SlotBody
-	SlotShield
-	SlotWeapon
+	SlotShield // Right hand
+	SlotWeapon // Left hand
 	SlotLegs
 	SlotRing
 	SlotFeet
@@ -33,6 +33,14 @@ type Skill struct {
 	Experience uint32 // tries
 	Level      uint8
 	Percent    uint8
+}
+
+type Outfit struct {
+	Type uint8
+	Head uint8
+	Body uint8
+	Legs uint8
+	Feet uint8
 }
 
 type Creature struct {

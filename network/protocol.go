@@ -3,72 +3,151 @@ package network
 import (
 	"fmt"
 	"net"
-	"time"
 
 	"github.com/rwxsu/goot/game"
 )
 
-func ParsePacket(c *net.Conn, player *game.Creature, m *game.Map, code uint8) {
+// Player message type
+const (
+	PlayerMessageTypeInfo   uint8 = 0x15
+	PlayerMessageTypeCancel uint8 = 0x17
+)
+
+func ParseCommand(c *net.Conn, player *game.Creature, m *game.Map, code uint8) {
 	switch code {
 	case 0x65:
-		SendMove(c, player, m, game.North)
-		break
+		if !SendCreatureMove(c, player, m, game.North) {
+			SendSnapback(c, player)
+		}
+		return
 	case 0x66:
-		SendMove(c, player, m, game.East)
-		break
+		if !SendCreatureMove(c, player, m, game.East) {
+			SendSnapback(c, player)
+		}
+		return
 	case 0x67:
-		SendMove(c, player, m, game.South)
-		break
+		if !SendCreatureMove(c, player, m, game.South) {
+			SendSnapback(c, player)
+		}
+		return
 	case 0x68:
-		SendMove(c, player, m, game.West)
-		break
+		if !SendCreatureMove(c, player, m, game.West) {
+			SendSnapback(c, player)
+		}
+		return
 	default:
-		fmt.Println(":: Received unknown packet")
+		SendSnapback(c, player)
+		return
 	}
 }
 
-func SendMove(c *net.Conn, player *game.Creature, m *game.Map, direction uint8) {
+func SendInvalidClientVersion(c *net.Conn) {
 	msg := NewMessage()
-	msg.WriteUint8(0x6d)
-	AddPosition(msg, player.Position)
-	msg.WriteUint8(0x01) // oldStackPos?
-	switch direction {
-	case game.North:
-		player.Position.Y--
-		AddPosition(msg, player.Position)
-		AddMapDescription(msg, player.Position, m)
-		break
-	case game.South:
-		player.Position.Y++
-		AddPosition(msg, player.Position)
-		AddMapDescription(msg, player.Position, m)
-		break
-	case game.East:
-		player.Position.X++
-		AddPosition(msg, player.Position)
-		AddMapDescription(msg, player.Position, m)
-		break
-	case game.West:
-		player.Position.X--
-		AddPosition(msg, player.Position)
-		AddMapDescription(msg, player.Position, m)
-		break
-	}
+	msg.WriteUint8(0x0a)
+	msg.WriteString("Only protocol 7.40 allowed!")
 	SendMessage(c, msg)
 }
 
-func ValidateClientVersion(c *net.Conn, req *Message) bool {
-	req.SkipBytes(2) // os := req.ReadUint16()
-	if req.ReadUint16() != 740 {
-		res := NewMessage()
-		res.WriteUint8(0x0a)
-		res.WriteString("Only protocol 7.40 allowed!")
-		SendMessage(c, res)
-		res.HexDump("response")
-		(*c).Close()
+func SendCharacterList(c *net.Conn) {
+	characters := make([]game.Creature, 2)
+	characters[0].Name = "admin"
+	characters[0].World.Name = "test"
+	characters[0].World.Port = 7171
+	characters[1].Name = "rwxsu"
+	characters[1].World.Name = "test"
+	characters[1].World.Port = 7171
+	res := NewMessage()
+	res.WriteUint8(0x14) // MOTD
+	res.WriteString("Welcome to GoOT.")
+	res.WriteUint8(0x64) // character list
+	res.WriteUint8((uint8)(len(characters)))
+	for i := 0; i < len(characters); i++ {
+		res.WriteString(characters[i].Name)
+		res.WriteString(characters[i].World.Name)
+		res.WriteUint8(127)
+		res.WriteUint8(0)
+		res.WriteUint8(0)
+		res.WriteUint8(1)
+		res.WriteUint16(characters[i].World.Port)
+	}
+	res.WriteUint16(0) // premium days
+	SendMessage(c, res)
+}
+
+func SendSnapback(c *net.Conn, player *game.Creature) {
+	msg := NewMessage()
+	msg.WriteUint8(0xb5)
+	msg.WriteUint8(player.Direction)
+	SendMessage(c, msg)
+	SendCancelMessage(c, "Sorry, not possible.")
+}
+
+func SendCancelMessage(c *net.Conn, str string) {
+	msg := NewMessage()
+	AddPlayerMessage(msg, str, PlayerMessageTypeCancel)
+	SendMessage(c, msg)
+}
+
+func SendCreatureMove(c *net.Conn, player *game.Creature, m *game.Map, direction uint8) bool {
+	from := player.Position
+	to := player.Position
+	switch direction {
+	case game.North:
+		to.Y--
+		break
+	case game.South:
+		to.Y++
+		break
+	case game.East:
+		to.X++
+		break
+	case game.West:
+		to.X--
+		break
+	}
+	if !m.MoveCreature(player, to) {
 		return false
 	}
+	msg := NewMessage()
+	msg.WriteUint8(0x6d)
+	AddPosition(msg, from)
+	msg.WriteUint8(0x01) // oldStackPos
+	AddPosition(msg, to)
+	SendMessage(c, msg)
 	return true
+}
+
+func SendAddCreature(c *net.Conn, character *game.Creature, m *game.Map) {
+	res := NewMessage()
+	res.WriteUint8(0x0a)
+	res.WriteUint32(character.ID) // ID
+	res.WriteUint16(0x32)         // ?
+	// can report bugs?
+	if character.Access > game.Regular {
+		res.WriteUint8(0x01)
+	} else {
+		res.WriteUint8(0x00)
+	}
+	if character.Access >= game.Gamemaster {
+		res.WriteUint8(0x0b)
+		for i := 0; i < 32; i++ {
+			res.WriteUint8(0xff)
+		}
+	}
+	tile := m.GetTile(character.Position)
+	tile.AddCreature(character)
+	AddMapDescription(res, character.Position, m)
+	AddMagicEffect(res, character.Position, 0x0a)
+	AddInventory(res, character)
+	AddStats(res, character)
+	AddSkills(res, character)
+	AddWorldLight(res, &character.World)
+	AddCreatureLight(res, character)
+	AddPlayerMessage(res, fmt.Sprintf("Welcome, %s.", character.Name), PlayerMessageTypeInfo)
+	AddPlayerMessage(res, "TODO: Last Login String 01-01-1970", PlayerMessageTypeInfo)
+	AddCreatureLight(res, character)
+	AddIcons(res, character)
+	SendMessage(c, res)
 }
 
 func AddCreatureLight(msg *Message, c *game.Creature) {
@@ -159,8 +238,6 @@ func AddInventory(msg *Message, c *game.Creature) {
 }
 
 func AddMapDescription(msg *Message, pos game.Position, m *game.Map) {
-	fmt.Printf(":: AddMapDescription ")
-	begin := time.Now()
 	msg.WriteUint8(0x64) // send map description
 	AddPosition(msg, pos)
 
@@ -174,7 +251,7 @@ func AddMapDescription(msg *Message, pos game.Position, m *game.Map) {
 		for z := (int8)(7); z > -1; z-- {
 			for x := (uint16)(0); x < 18; x++ {
 				for y := (uint16)(0); y < 14; y++ {
-					tile := m.GetTile(game.Position{pos.X + x, pos.Y + y, (uint8)(z)})
+					tile := m.GetTile(game.Position{X: pos.X + x, Y: pos.Y + y, Z: (uint8)(z)})
 					if tile != nil {
 						if skip > 0 {
 							msg.WriteUint8(skip)
@@ -193,15 +270,13 @@ func AddMapDescription(msg *Message, pos game.Position, m *game.Map) {
 				}
 			}
 		}
-	} else { // underground
+	} else { // TODO: underground
 
 	}
 
 	// Remainder
 	msg.WriteUint8(skip)
 	msg.WriteUint8(0xff)
-
-	fmt.Printf("[%v]\n", time.Since(begin))
 }
 
 func AddPosition(msg *Message, pos game.Position) {
@@ -245,71 +320,8 @@ func AddTile(msg *Message, tile *game.Tile) {
 	msg.WriteUint16(0xff00)
 }
 
-func SendCharacterList(c *net.Conn) {
-	characters := make([]game.Creature, 2)
-	characters[0].Name = "admin"
-	characters[0].World.Name = "test"
-	characters[0].World.Port = 7171
-	characters[1].Name = "rwxsu"
-	characters[1].World.Name = "test"
-	characters[1].World.Port = 7171
-	res := NewMessage()
-	res.WriteUint8(0x14) // MOTD
-	res.WriteString("Welcome to GoOT.")
-	res.WriteUint8(0x64) // character list
-	res.WriteUint8((uint8)(len(characters)))
-	for i := 0; i < len(characters); i++ {
-		res.WriteString(characters[i].Name)
-		res.WriteString(characters[i].World.Name)
-		res.WriteUint8(127)
-		res.WriteUint8(0)
-		res.WriteUint8(0)
-		res.WriteUint8(1)
-		res.WriteUint16(characters[i].World.Port)
-	}
-	res.WriteUint16(0) // premium days
-	SendMessage(c, res)
-	res.HexDump("response")
-}
-
-func SendAddCreature(c *net.Conn, character *game.Creature, m *game.Map) {
-	res := NewMessage()
-	res.WriteUint8(0x0a)
-	res.WriteUint32(character.ID) // ID
-	res.WriteUint16(0x32)         // ?
-
-	// can report bugs?
-	if character.Access > game.Regular {
-		res.WriteUint8(0x01)
-	} else {
-		res.WriteUint8(0x00)
-	}
-	if character.Access >= game.Gamemaster {
-		res.WriteUint8(0x0b)
-		for i := 0; i < 32; i++ {
-			res.WriteUint8(0xff)
-		}
-	}
-
-	tile := m.GetTile(character.Position)
-	tile.AddCreature(character)
-	AddMapDescription(res, character.Position, m)
-	AddMagicEffect(res, character.Position, 0x0a)
-	AddInventory(res, character)
-	AddStats(res, character)
-	AddSkills(res, character)
-	AddWorldLight(res, &character.World)
-	AddCreatureLight(res, character)
-	AddInfoString(res, fmt.Sprintf("Welcome, %s.", character.Name))
-	AddInfoString(res, "TODO: Last Login String 01-01-1970")
-	AddCreatureLight(res, character)
-	AddIcons(res, character)
-	SendMessage(c, res)
-	res.HexDump("response")
-}
-
-func AddInfoString(msg *Message, str string) {
+func AddPlayerMessage(msg *Message, str string, kind uint8) {
 	msg.WriteUint8(0xb4)
-	msg.WriteUint8(0x15) // type info
+	msg.WriteUint8(kind)
 	msg.WriteString(str)
 }
