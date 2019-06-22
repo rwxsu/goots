@@ -65,7 +65,7 @@ func main() {
 	}
 
 	for {
-		func(c *net.Conn) {
+		func(c net.Conn) {
 			req := network.RecvMessage(c)
 			if req == nil {
 				return
@@ -96,12 +96,12 @@ func main() {
 				network.ParseCommand(c, req, &player, &m, code)
 				return
 			}
-			(*c).Close()
-			(*c), err = l.Accept()
+			c.Close()
+			c, err = l.Accept()
 			if err != nil {
 				log.Println(err)
 				return
 			}
-		}(&c)
+		}(c)
 	}
 }
