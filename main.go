@@ -36,11 +36,11 @@ func acceptConnections(listener net.Listener, m game.Map) {
 			log.Println(err)
 			return
 		}
-		go handleConnection(&c, m)
+		go handleConnection(c, m)
 	}
 }
 
-func handleConnection(c *net.Conn, m game.Map) {
+func handleConnection(c net.Conn, m game.Map) {
 	// Placeholder player
 	player := game.Creature{
 		ID:        0x04030201,
@@ -104,5 +104,5 @@ connectionLoop:
 			network.ParseCommand(c, req, &player, &m, code)
 		}
 	}
-	(*c).Close()
+	c.Close()
 }
