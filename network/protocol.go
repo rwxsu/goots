@@ -129,7 +129,7 @@ func SendMoveCreature(c *net.Conn, player *game.Creature, m *game.Map, direction
 	AddPosition(msg, to)
 
 	msg.WriteUint8(code)
-	AddMapDescription(msg, to, m, width, height)
+	AddMapDescription(msg, m, to, width, height)
 
 	player.Direction = direction
 
@@ -156,7 +156,7 @@ func SendAddCreature(c *net.Conn, character *game.Creature, m *game.Map) {
 	}
 	tile := m.GetTile(character.Position)
 	tile.AddCreature(character)
-	AddMapDescription(res, character.Position, m, 18, 14)
+	AddMapDescription(res, m, character.Position, 18, 14)
 	AddMagicEffect(res, character.Position, 0x0a)
 	AddInventory(res, character)
 	AddStats(res, character)
@@ -257,7 +257,7 @@ func AddInventory(msg *Message, c *game.Creature) {
 	msg.WriteUint8(33)     // count
 }
 
-func AddMapDescription(msg *Message, pos game.Position, m *game.Map, width, height uint16) {
+func AddMapDescription(msg *Message, m *game.Map, pos game.Position, width, height uint16) {
 	msg.WriteUint8(0x64) // send map description
 	AddPosition(msg, pos)
 
@@ -274,7 +274,7 @@ func AddMapDescription(msg *Message, pos game.Position, m *game.Map, width, heig
 					tile := m.GetTile(game.Position{X: pos.X + x, Y: pos.Y + y, Z: (uint8)(z)})
 					if tile != nil {
 						if skip > 0 {
-							msg.WriteUint8(skip)
+							msg.WriteUint8(skip - 1)
 							msg.WriteUint8(0xff)
 							skip = 0
 						}
@@ -282,7 +282,7 @@ func AddMapDescription(msg *Message, pos game.Position, m *game.Map, width, heig
 					} else {
 						skip++
 						if skip == 0xff {
-							msg.WriteUint8(skip)
+							msg.WriteUint8(skip - 1)
 							msg.WriteUint8(0xff)
 							skip = 0
 						}
@@ -293,10 +293,11 @@ func AddMapDescription(msg *Message, pos game.Position, m *game.Map, width, heig
 	} else { // TODO: underground
 
 	}
-
 	// Remainder
-	msg.WriteUint8(skip)
-	msg.WriteUint8(0xff)
+	if skip > 0 {
+		msg.WriteUint8(skip)
+		msg.WriteUint8(0xff)
+	}
 }
 
 func AddPosition(msg *Message, pos game.Position) {
