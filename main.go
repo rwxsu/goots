@@ -13,11 +13,35 @@ func main() {
 	m := make(game.Map)
 
 	const sectors = "data/map/sectors/*"
-	filenames, _ := filepath.Glob(sectors)
+	filenames, err := filepath.Glob(sectors)
+	if err != nil {
+		panic(err)
+	}
 	for _, fn := range filenames {
 		m.LoadSector(fn)
 	}
 
+	l, err := net.Listen("tcp", ":7171")
+	if err != nil {
+		panic(err)
+	}
+	defer l.Close()
+	acceptConnections(l, m)
+}
+
+func acceptConnections(listener net.Listener, m game.Map) {
+	for {
+		c, err := listener.Accept()
+		if err != nil {
+			log.Println(err)
+			return
+		}
+		go handleConnection(&c, m)
+	}
+}
+
+func handleConnection(c *net.Conn, m game.Map) {
+	// Placeholder player
 	player := game.Creature{
 		ID:        0x04030201,
 		Access:    game.Tutor,
@@ -47,61 +71,38 @@ func main() {
 		},
 		Skull: 3,
 		Icons: 1,
-		Light: game.Light{Level: 0x7, Color: 0xd7},
-		World: game.World{Light: game.Light{Level: 0x00, Color: 0xd7}},
+		Light: game.Light{0x7, 0xd7},
+		World: game.World{Light: game.Light{0x00, 0xd7}},
 		Speed: 70,
 	}
-
-	l, err := net.Listen("tcp", ":7171")
-	if err != nil {
-		panic(err)
-	}
-	defer l.Close()
-
-	c, err := l.Accept()
-	if err != nil {
-		log.Println(err)
-		return
-	}
-
+connectionLoop:
 	for {
-		func(c *net.Conn) {
-			req := network.RecvMessage(c)
-			if req == nil {
-				return
+		req := network.RecvMessage(c)
+		if req == nil {
+			return
+		}
+		code := req.ReadUint8()
+		switch code {
+		case 0x01: // request character list
+			req.SkipBytes(2) // os := req.ReadUint16()
+			if req.ReadUint16() != 740 {
+				network.SendInvalidClientVersion(c)
+				break connectionLoop
 			}
-			// break: closes current connection and listens for new connection
-			// return: continues on same connection
-			code := req.ReadUint8()
-			switch code {
-			case 0x01: // request character list
-				req.SkipBytes(2) // os := req.ReadUint16()
-				if req.ReadUint16() != 740 {
-					network.SendInvalidClientVersion(c)
-					break
-				}
-				network.SendCharacterList(c)
-				break
-			case 0x0a: // request character login
-				req.SkipBytes(2) // os := req.ReadUint16()
-				if req.ReadUint16() != 740 {
-					network.SendInvalidClientVersion(c)
-					break
-				}
-				network.SendAddCreature(c, &player, &m)
-				return
-			case 0x14: // logout
-				break
-			default:
-				network.ParseCommand(c, req, &player, &m, code)
-				return
+			network.SendCharacterList(c)
+			break
+		case 0x0a: // request character login
+			req.SkipBytes(2) // os := req.ReadUint16()
+			if req.ReadUint16() != 740 {
+				network.SendInvalidClientVersion(c)
+				break connectionLoop
 			}
-			(*c).Close()
-			(*c), err = l.Accept()
-			if err != nil {
-				log.Println(err)
-				return
-			}
-		}(&c)
+			network.SendAddCreature(c, &player, &m)
+		case 0x14: // logout
+			break connectionLoop
+		default:
+			network.ParseCommand(c, req, &player, &m, code)
+		}
 	}
+	(*c).Close()
 }
