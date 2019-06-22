@@ -71,8 +71,8 @@ func handleConnection(c *net.Conn, m game.Map) {
 		},
 		Skull: 3,
 		Icons: 1,
-		Light: game.Light{0x7, 0xd7},
-		World: game.World{Light: game.Light{0x00, 0xd7}},
+		Light: game.Light{Level: 0x7, Color: 0xd7},
+		World: game.World{Light: game.Light{Level: 0x00, Color: 0xd7}},
 		Speed: 70,
 	}
 connectionLoop:
