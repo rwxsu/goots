@@ -16,22 +16,22 @@ const (
 func ParseCommand(c *net.Conn, msg *Message, player *game.Creature, m *game.Map, code uint8) {
 	switch code {
 	case 0x65:
-		if !SendCreatureMove(c, player, m, game.North) {
+		if !SendMoveCreature(c, player, m, game.North, code) {
 			SendSnapback(c, player)
 		}
 		return
 	case 0x66:
-		if !SendCreatureMove(c, player, m, game.East) {
+		if !SendMoveCreature(c, player, m, game.East, code) {
 			SendSnapback(c, player)
 		}
 		return
 	case 0x67:
-		if !SendCreatureMove(c, player, m, game.South) {
+		if !SendMoveCreature(c, player, m, game.South, code) {
 			SendSnapback(c, player)
 		}
 		return
 	case 0x68:
-		if !SendCreatureMove(c, player, m, game.West) {
+		if !SendMoveCreature(c, player, m, game.West, code) {
 			SendSnapback(c, player)
 		}
 		return
@@ -93,20 +93,29 @@ func SendCancelMessage(c *net.Conn, str string) {
 	SendMessage(c, msg)
 }
 
-func SendCreatureMove(c *net.Conn, player *game.Creature, m *game.Map, direction uint8) bool {
+func SendMoveCreature(c *net.Conn, player *game.Creature, m *game.Map, direction, code uint8) bool {
+	var width, height uint16
 	from := player.Position
 	to := player.Position
 	switch direction {
 	case game.North:
+		width = 18
+		height = 1
 		to.Y--
 		break
 	case game.South:
+		width = 18
+		height = 1
 		to.Y++
 		break
 	case game.East:
+		width = 1
+		height = 14
 		to.X++
 		break
 	case game.West:
+		width = 1
+		height = 14
 		to.X--
 		break
 	}
@@ -118,6 +127,12 @@ func SendCreatureMove(c *net.Conn, player *game.Creature, m *game.Map, direction
 	AddPosition(msg, from)
 	msg.WriteUint8(0x01) // oldStackPos
 	AddPosition(msg, to)
+
+	msg.WriteUint8(code)
+	AddMapDescription(msg, to, m, width, height)
+
+	player.Direction = direction
+
 	SendMessage(c, msg)
 	return true
 }
@@ -141,7 +156,7 @@ func SendAddCreature(c *net.Conn, character *game.Creature, m *game.Map) {
 	}
 	tile := m.GetTile(character.Position)
 	tile.AddCreature(character)
-	AddMapDescription(res, character.Position, m)
+	AddMapDescription(res, character.Position, m, 18, 14)
 	AddMagicEffect(res, character.Position, 0x0a)
 	AddInventory(res, character)
 	AddStats(res, character)
@@ -242,7 +257,7 @@ func AddInventory(msg *Message, c *game.Creature) {
 	msg.WriteUint8(33)     // count
 }
 
-func AddMapDescription(msg *Message, pos game.Position, m *game.Map) {
+func AddMapDescription(msg *Message, pos game.Position, m *game.Map, width, height uint16) {
 	msg.WriteUint8(0x64) // send map description
 	AddPosition(msg, pos)
 
@@ -254,8 +269,8 @@ func AddMapDescription(msg *Message, pos game.Position, m *game.Map) {
 
 	if pos.Z < 8 {
 		for z := (int8)(7); z > -1; z-- {
-			for x := (uint16)(0); x < 18; x++ {
-				for y := (uint16)(0); y < 14; y++ {
+			for x := (uint16)(0); x < width; x++ {
+				for y := (uint16)(0); y < height; y++ {
 					tile := m.GetTile(game.Position{X: pos.X + x, Y: pos.Y + y, Z: (uint8)(z)})
 					if tile != nil {
 						if skip > 0 {
