@@ -13,10 +13,8 @@ func main() {
 	m := make(game.Map)
 
 	const sectors = "data/map/sectors/*"
-	filenames, err := filepath.Glob(sectors)
-	if err != nil {
-		panic(err)
-	}
+	filenames, _ := filepath.Glob(sectors)
+
 	for _, fn := range filenames {
 		m.LoadSector(fn)
 	}
