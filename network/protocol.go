@@ -13,7 +13,7 @@ const (
 	PlayerMessageTypeCancel uint8 = 0x17
 )
 
-func ParseCommand(c net.Conn, msg *Message, player *game.Creature, m *game.Map, code uint8) {
+func ParseCommand(c *net.Conn, msg *Message, player *game.Creature, m *game.Map, code uint8) {
 	switch code {
 	case 0x65:
 		if !SendMoveCreature(c, player, m, game.North, code) {
@@ -46,14 +46,14 @@ func ParseCommand(c net.Conn, msg *Message, player *game.Creature, m *game.Map, 
 	}
 }
 
-func SendInvalidClientVersion(c net.Conn) {
+func SendInvalidClientVersion(c *net.Conn) {
 	msg := NewMessage()
 	msg.WriteUint8(0x0a)
 	msg.WriteString("Only protocol 7.40 allowed!")
 	SendMessage(c, msg)
 }
 
-func SendCharacterList(c net.Conn) {
+func SendCharacterList(c *net.Conn) {
 	characters := make([]game.Creature, 2)
 	characters[0].Name = "admin"
 	characters[0].World.Name = "test"
@@ -79,7 +79,7 @@ func SendCharacterList(c net.Conn) {
 	SendMessage(c, res)
 }
 
-func SendSnapback(c net.Conn, player *game.Creature) {
+func SendSnapback(c *net.Conn, player *game.Creature) {
 	msg := NewMessage()
 	msg.WriteUint8(0xb5)
 	msg.WriteUint8(player.Direction)
@@ -87,13 +87,13 @@ func SendSnapback(c net.Conn, player *game.Creature) {
 	SendCancelMessage(c, "Sorry, not possible.")
 }
 
-func SendCancelMessage(c net.Conn, str string) {
+func SendCancelMessage(c *net.Conn, str string) {
 	msg := NewMessage()
 	AddPlayerMessage(msg, str, PlayerMessageTypeCancel)
 	SendMessage(c, msg)
 }
 
-func SendMoveCreature(c net.Conn, player *game.Creature, m *game.Map, direction, code uint8) bool {
+func SendMoveCreature(c *net.Conn, player *game.Creature, m *game.Map, direction, code uint8) bool {
 	var width, height uint16
 	from := player.Position
 	to := player.Position
@@ -137,7 +137,7 @@ func SendMoveCreature(c net.Conn, player *game.Creature, m *game.Map, direction,
 	return true
 }
 
-func SendAddCreature(c net.Conn, character *game.Creature, m *game.Map) {
+func SendAddCreature(c *net.Conn, character *game.Creature, m *game.Map) {
 	res := NewMessage()
 	res.WriteUint8(0x0a)
 	res.WriteUint32(character.ID) // ID
