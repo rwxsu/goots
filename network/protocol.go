@@ -41,7 +41,7 @@ func ParseCommand(c net.Conn, msg *Message, player *game.Creature, m *game.Map, 
 		player.Tactic.AttackPlayers = msg.ReadUint8()
 		return
 	default:
-		SendSnapback(c, player)
+		//SendSnapback(c, player)
 		return
 	}
 }
@@ -93,12 +93,8 @@ func SendCancelMessage(c net.Conn, str string) {
 	SendMessage(c, msg)
 }
 
-<<<<<<< HEAD
 func SendMoveCreature(c net.Conn, player *game.Creature, m *game.Map, direction, code uint8) bool {
-=======
-func SendMoveCreature(c *net.Conn, player *game.Creature, m *game.Map, direction, code uint8) bool {
 	var offset game.Offset
->>>>>>> 771a4aa74ad7ecc9c0a303781a2508e983b21b33
 	var width, height uint16
 	from := player.Position
 	to := player.Position
