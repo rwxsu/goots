@@ -15,6 +15,16 @@ type Position struct {
 	Z uint8
 }
 
+type Offset struct {
+	X, Y, Z int8
+}
+
+func (pos *Position) Offset(offset Offset) {
+	pos.X += (uint16)(offset.X)
+	pos.Y += (uint16)(offset.Y)
+	pos.Z += (uint8)(offset.Z)
+}
+
 // Light has the same structure for both creatures and world
 type Light struct {
 	Level uint8
