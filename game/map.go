@@ -90,7 +90,11 @@ func (m *Map) LoadSector(filename string) {
 			default:
 				panic("in LoadSector: could not get item ids")
 			}
-			(*m)[spos][offsetX][offsetY] = &tile
+			if len(tile.Items) > 0 {
+				(*m)[spos][offsetX][offsetY] = &tile
+			} else {
+				(*m)[spos][offsetX][offsetY] = nil
+			}
 		}
 	}
 
@@ -98,7 +102,7 @@ func (m *Map) LoadSector(filename string) {
 }
 
 // MoveCreature on map
-func (m *Map) MoveCreature(c *Creature, pos Position) bool {
+func (m *Map) MoveCreature(c *Creature, pos Position, direction uint8) bool {
 	from := m.GetTile(c.Position)
 	to := m.GetTile(pos)
 	if from == nil || to == nil {
@@ -108,6 +112,7 @@ func (m *Map) MoveCreature(c *Creature, pos Position) bool {
 		return false
 	}
 	to.AddCreature(c)
+	c.Direction = direction
 	return true
 }
 
