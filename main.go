@@ -27,9 +27,9 @@ func main() {
 	acceptConnections(l, m)
 }
 
-func acceptConnections(listener net.Listener, m game.Map) {
+func acceptConnections(l net.Listener, m game.Map) {
 	for {
-		c, err := listener.Accept()
+		c, err := l.Accept()
 		if err != nil {
 			log.Println(err)
 			return
@@ -88,7 +88,6 @@ connectionLoop:
 				break connectionLoop
 			}
 			network.SendCharacterList(c)
-			break
 		case 0x0a: // request character login
 			req.SkipBytes(2) // os := req.ReadUint16()
 			if req.ReadUint16() != 740 {
