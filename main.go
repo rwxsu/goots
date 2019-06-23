@@ -101,5 +101,7 @@ connectionLoop:
 			network.ParseCommand(c, req, &player, &m, code)
 		}
 	}
-	c.Close()
+	if err := c.Close(); err != nil {
+		log.Printf("Unable to close connection %v\n", err)
+	}
 }
