@@ -16,22 +16,22 @@ const (
 func ParseCommand(c *net.Conn, msg *Message, player *game.Creature, m *game.Map, code uint8) {
 	switch code {
 	case 0x65:
-		if !SendMoveCreature(c, player, m, game.North, code) {
+		if !SendMoveCreature(c, m, player, game.North, code) {
 			SendSnapback(c, player)
 		}
 		return
 	case 0x66:
-		if !SendMoveCreature(c, player, m, game.East, code) {
+		if !SendMoveCreature(c, m, player, game.East, code) {
 			SendSnapback(c, player)
 		}
 		return
 	case 0x67:
-		if !SendMoveCreature(c, player, m, game.South, code) {
+		if !SendMoveCreature(c, m, player, game.South, code) {
 			SendSnapback(c, player)
 		}
 		return
 	case 0x68:
-		if !SendMoveCreature(c, player, m, game.West, code) {
+		if !SendMoveCreature(c, m, player, game.West, code) {
 			SendSnapback(c, player)
 		}
 		return
@@ -93,7 +93,7 @@ func SendCancelMessage(c *net.Conn, str string) {
 	SendMessage(c, msg)
 }
 
-func SendMoveCreature(c *net.Conn, player *game.Creature, m *game.Map, direction, code uint8) bool {
+func SendMoveCreature(c *net.Conn, m *game.Map, player *game.Creature, direction, code uint8) bool {
 	var offset game.Offset
 	var width, height uint16
 	from := player.Position
@@ -137,6 +137,7 @@ func SendMoveCreature(c *net.Conn, player *game.Creature, m *game.Map, direction
 	msg.WriteUint8(0x01) // oldStackPos
 	AddPosition(msg, to)
 	msg.WriteUint8(code)
+	msg.WriteUint16(0x63) // Creatureturn? In client's debug error.txt this is the "Parameter" field (0x63 == -1)
 	AddMapDescription(msg, m, to, offset, width, height)
 	SendMessage(c, msg)
 	return true
@@ -185,8 +186,8 @@ func AddCreatureLight(msg *Message, c *game.Creature) {
 
 func AddWorldLight(msg *Message, w *game.World) {
 	msg.WriteUint8(0x82)
-	msg.WriteUint8(w.Light.Level) // 0xfa
-	msg.WriteUint8(w.Light.Color) // 0xd7
+	msg.WriteUint8(w.Light.Level)
+	msg.WriteUint8(w.Light.Color)
 }
 
 func AddIcons(msg *Message, c *game.Creature) {

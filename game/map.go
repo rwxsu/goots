@@ -112,6 +112,7 @@ func (m *Map) MoveCreature(c *Creature, pos Position, direction uint8) bool {
 		return false
 	}
 	to.AddCreature(c)
+	c.Position = pos
 	c.Direction = direction
 	return true
 }
