@@ -49,7 +49,7 @@ func main() {
 		Icons: 1,
 		Light: game.Light{Level: 0x7, Color: 0xd7},
 		World: game.World{Light: game.Light{Level: 0x00, Color: 0xd7}},
-		Speed: 70,
+		Speed: 60000,
 	}
 
 	l, err := net.Listen("tcp", ":7171")

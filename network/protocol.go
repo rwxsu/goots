@@ -41,7 +41,7 @@ func ParseCommand(c *net.Conn, msg *Message, player *game.Creature, m *game.Map,
 		player.Tactic.AttackPlayers = msg.ReadUint8()
 		return
 	default:
-		// SendSnapback(c, player)
+		SendSnapback(c, player)
 		return
 	}
 }
@@ -108,13 +108,13 @@ func SendMoveCreature(c *net.Conn, m *game.Map, player *game.Creature, direction
 		break
 	case game.South:
 		offset.X = -8
-		offset.Y = -6
+		offset.Y = 7
 		width = 18
 		height = 1
 		to.Y++
 		break
 	case game.East:
-		offset.X = -8
+		offset.X = 9
 		offset.Y = -6
 		width = 1
 		height = 14
@@ -277,10 +277,10 @@ func AddMapDescription(msg *Message, m *game.Map, pos game.Position, offset game
 						if skip > 0 {
 							msg.WriteUint8(skip - 1)
 							msg.WriteUint8(0xff)
-							skip = 1
 						}
+						skip = 1
 						AddTile(msg, tile)
-					} else if skip == 0xff {
+					} else if skip == 0xfe {
 						msg.WriteUint8(skip)
 						msg.WriteUint8(0xff)
 						skip = 0
@@ -331,6 +331,8 @@ func AddCreature(msg *Message, c *game.Creature) {
 	msg.WriteUint8(c.Party)
 }
 
+// AddTile adds all the tile items and creatures WITHOUT the end of tile
+//delimeter (0xSKIP-0xff)
 func AddTile(msg *Message, tile *game.Tile) {
 	for _, i := range tile.Items {
 		msg.WriteUint16(i.ID)
@@ -338,7 +340,6 @@ func AddTile(msg *Message, tile *game.Tile) {
 	for _, c := range tile.Creatures {
 		AddCreature(msg, c)
 	}
-	msg.WriteUint16(0xff00)
 }
 
 func AddPlayerMessage(msg *Message, str string, kind uint8) {
