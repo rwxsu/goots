@@ -16,22 +16,22 @@ const (
 func ParseCommand(c net.Conn, msg *Message, player *game.Creature, m *game.Map, code uint8) {
 	switch code {
 	case 0x65:
-		if !SendMoveCreature(c, player, m, game.North, code) {
+		if !SendMoveCreature(c, m, player, game.North, code) {
 			SendSnapback(c, player)
 		}
 		return
 	case 0x66:
-		if !SendMoveCreature(c, player, m, game.East, code) {
+		if !SendMoveCreature(c, m, player, game.East, code) {
 			SendSnapback(c, player)
 		}
 		return
 	case 0x67:
-		if !SendMoveCreature(c, player, m, game.South, code) {
+		if !SendMoveCreature(c, m, player, game.South, code) {
 			SendSnapback(c, player)
 		}
 		return
 	case 0x68:
-		if !SendMoveCreature(c, player, m, game.West, code) {
+		if !SendMoveCreature(c, m, player, game.West, code) {
 			SendSnapback(c, player)
 		}
 		return
@@ -41,7 +41,7 @@ func ParseCommand(c net.Conn, msg *Message, player *game.Creature, m *game.Map, 
 		player.Tactic.AttackPlayers = msg.ReadUint8()
 		return
 	default:
-		//SendSnapback(c, player)
+		SendSnapback(c, player)
 		return
 	}
 }
@@ -93,7 +93,7 @@ func SendCancelMessage(c net.Conn, str string) {
 	SendMessage(c, msg)
 }
 
-func SendMoveCreature(c net.Conn, player *game.Creature, m *game.Map, direction, code uint8) bool {
+func SendMoveCreature(c net.Conn, m *game.Map, player *game.Creature, direction, code uint8) bool {
 	var offset game.Offset
 	var width, height uint16
 	from := player.Position
@@ -108,13 +108,13 @@ func SendMoveCreature(c net.Conn, player *game.Creature, m *game.Map, direction,
 		break
 	case game.South:
 		offset.X = -8
-		offset.Y = -6
+		offset.Y = 7
 		width = 18
 		height = 1
 		to.Y++
 		break
 	case game.East:
-		offset.X = -8
+		offset.X = 9
 		offset.Y = -6
 		width = 1
 		height = 14
@@ -137,6 +137,7 @@ func SendMoveCreature(c net.Conn, player *game.Creature, m *game.Map, direction,
 	msg.WriteUint8(0x01) // oldStackPos
 	AddPosition(msg, to)
 	msg.WriteUint8(code)
+	msg.WriteUint16(0x63) // Creatureturn? In client's debug error.txt this is the "Parameter" field (0x63 == -1)
 	AddMapDescription(msg, m, to, offset, width, height)
 	SendMessage(c, msg)
 	return true
@@ -185,8 +186,8 @@ func AddCreatureLight(msg *Message, c *game.Creature) {
 
 func AddWorldLight(msg *Message, w *game.World) {
 	msg.WriteUint8(0x82)
-	msg.WriteUint8(w.Light.Level) // 0xfa
-	msg.WriteUint8(w.Light.Color) // 0xd7
+	msg.WriteUint8(w.Light.Level)
+	msg.WriteUint8(w.Light.Color)
 }
 
 func AddIcons(msg *Message, c *game.Creature) {
@@ -276,10 +277,10 @@ func AddMapDescription(msg *Message, m *game.Map, pos game.Position, offset game
 						if skip > 0 {
 							msg.WriteUint8(skip - 1)
 							msg.WriteUint8(0xff)
-							skip = 1
 						}
+						skip = 1
 						AddTile(msg, tile)
-					} else if skip == 0xff {
+					} else if skip == 0xfe {
 						msg.WriteUint8(skip)
 						msg.WriteUint8(0xff)
 						skip = 0
@@ -330,6 +331,8 @@ func AddCreature(msg *Message, c *game.Creature) {
 	msg.WriteUint8(c.Party)
 }
 
+// AddTile adds all the tile items and creatures WITHOUT the end of tile
+//delimeter (0xSKIP-0xff)
 func AddTile(msg *Message, tile *game.Tile) {
 	for _, i := range tile.Items {
 		msg.WriteUint16(i.ID)
@@ -337,7 +340,6 @@ func AddTile(msg *Message, tile *game.Tile) {
 	for _, c := range tile.Creatures {
 		AddCreature(msg, c)
 	}
-	msg.WriteUint16(0xff00)
 }
 
 func AddPlayerMessage(msg *Message, str string, kind uint8) {
