@@ -88,6 +88,7 @@ connectionLoop:
 				break connectionLoop
 			}
 			network.SendCharacterList(c)
+			break connectionLoop
 		case 0x0a: // request character login
 			req.SkipBytes(2) // os := req.ReadUint16()
 			if req.ReadUint16() != 740 {
