@@ -35,6 +35,18 @@ func ParseCommand(c net.Conn, msg *Message, player *game.Creature, m *game.Map, 
 			SendSnapback(c, player)
 		}
 		return
+	case 0x6f:
+		SendTurnCreature(c, m, player, game.North)
+		break
+	case 0x70:
+		SendTurnCreature(c, m, player, game.East)
+		break
+	case 0x71:
+		SendTurnCreature(c, m, player, game.South)
+		break
+	case 0x72:
+		SendTurnCreature(c, m, player, game.West)
+		break
 	case 0xa0:
 		player.Tactic.FightMode = msg.ReadUint8()
 		player.Tactic.ChaseOpponent = msg.ReadUint8()
@@ -141,6 +153,18 @@ func SendMoveCreature(c net.Conn, m *game.Map, player *game.Creature, direction,
 	AddMapArea(msg, m, to, offset, width, height)
 	SendMessage(c, msg)
 	return true
+}
+
+func SendTurnCreature(c net.Conn, m *game.Map, player *game.Creature, direction uint8) {
+	player.Direction = direction
+	msg := NewMessage()
+	msg.WriteUint8(0x6b)
+	AddPosition(msg, player.Position)
+	msg.WriteUint8(1)
+	msg.WriteUint16(0x63)
+	msg.WriteUint32(player.ID)
+	msg.WriteUint8(player.Direction)
+	SendMessage(c, msg)
 }
 
 func SendAddCreature(c net.Conn, character *game.Creature, m *game.Map) {
