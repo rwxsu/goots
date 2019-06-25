@@ -97,6 +97,7 @@ connectionLoop:
 			}
 			network.SendAddCreature(c, &player, &m)
 		case 0x14: // logout
+			m.GetTile(player.Position).RemoveCreature(&player)
 			break connectionLoop
 		default:
 			network.ParseCommand(c, req, &player, &m, code)
