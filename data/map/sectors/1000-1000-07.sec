@@ -1,12 +1,12 @@
 # # Tibia - graphical Multi-User-Dungeon
 # Sector File
 
-00-00: Content={103}
-00-01: Content={103}
-00-02: Content={103}
-00-03: Content={103, 2390}
-00-04: Content={103}
-00-05: Content={103}
+00-00: Content={405}
+00-01: Content={405}
+00-02: Content={405}
+00-03: Content={405, 2390}
+00-04: Content={405}
+00-05: Content={405}
 00-06: Content={103}
 00-07: Content={103}
 00-08: Content={103}
@@ -33,12 +33,12 @@
 00-29: Content={103}
 00-30: Content={103}
 00-31: Content={103}
-01-00: Content={103, 2390}
-01-01: Content={103}
-01-02: Content={103}
-01-03: Content={103}
-01-04: Content={103}
-01-05: Content={103}
+01-00: Content={405, 2390}
+01-01: Content={405}
+01-02: Content={405}
+01-03: Content={405}
+01-04: Content={405}
+01-05: Content={405}
 01-06: Content={103}
 01-07: Content={103}
 01-08: Content={103}
@@ -65,12 +65,12 @@
 01-29: Content={103}
 01-30: Content={103}
 01-31: Content={103}
-02-00: Content={103}
-02-01: Content={103}
-02-02: Content={103}
-02-03: Content={103}
-02-04: Content={103}
-02-05: Content={103}
+02-00: Content={405, 1036}
+02-01: Content={405, 1036}
+02-02: Content={405, 1036}
+02-03: Content={405, 1036}
+02-04: Content={405, 1036}
+02-05: Content={405, 1036}
 02-06: Content={103}
 02-07: Content={103}
 02-08: Content={103}
