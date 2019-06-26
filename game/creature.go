@@ -89,3 +89,7 @@ type Creature struct {
 	Icons     uint8
 	Tactic    Tactic
 }
+
+type Player struct {
+	Creature
+}

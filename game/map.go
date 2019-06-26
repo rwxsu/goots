@@ -86,7 +86,6 @@ func (m *Map) LoadSector(filename string) {
 				for _, id := range itemids {
 					tile.AddItem(&Item{ID: (uint16)(id)})
 				}
-				break
 			default:
 				panic("in LoadSector: could not get item ids")
 			}

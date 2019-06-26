@@ -61,10 +61,8 @@ func (p *Parser) NextToken() interface{} {
 				if v == '}' {
 					return ints
 				}
-				break
 			case int:
 				ints = append(ints, v)
-				break
 			}
 		}
 	}

@@ -19,42 +19,32 @@ func ParseCommand(c net.Conn, msg *Message, player *game.Creature, m *game.Map, 
 		if !SendMoveCreature(c, m, player, game.North, code) {
 			SendSnapback(c, player)
 		}
-		return
 	case 0x66:
 		if !SendMoveCreature(c, m, player, game.East, code) {
 			SendSnapback(c, player)
 		}
-		return
 	case 0x67:
 		if !SendMoveCreature(c, m, player, game.South, code) {
 			SendSnapback(c, player)
 		}
-		return
 	case 0x68:
 		if !SendMoveCreature(c, m, player, game.West, code) {
 			SendSnapback(c, player)
 		}
-		return
 	case 0x6f:
 		SendTurnCreature(c, m, player, game.North)
-		break
 	case 0x70:
 		SendTurnCreature(c, m, player, game.East)
-		break
 	case 0x71:
 		SendTurnCreature(c, m, player, game.South)
-		break
 	case 0x72:
 		SendTurnCreature(c, m, player, game.West)
-		break
 	case 0xa0:
 		player.Tactic.FightMode = msg.ReadUint8()
 		player.Tactic.ChaseOpponent = msg.ReadUint8()
 		player.Tactic.AttackPlayers = msg.ReadUint8()
-		return
 	default:
 		SendSnapback(c, player)
-		return
 	}
 }
 
@@ -117,28 +107,24 @@ func SendMoveCreature(c net.Conn, m *game.Map, player *game.Creature, direction,
 		width = 18
 		height = 1
 		to.Y--
-		break
 	case game.South:
 		offset.X = -8
 		offset.Y = 7
 		width = 18
 		height = 1
 		to.Y++
-		break
 	case game.East:
 		offset.X = 9
 		offset.Y = -6
 		width = 1
 		height = 14
 		to.X++
-		break
 	case game.West:
 		offset.X = -8
 		offset.Y = -6
 		width = 1
 		height = 14
 		to.X--
-		break
 	}
 	if !m.MoveCreature(player, to, direction) {
 		return false
