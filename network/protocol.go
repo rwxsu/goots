@@ -135,7 +135,6 @@ func SendMoveCreature(c net.Conn, m *game.Map, player *game.Creature, direction,
 	msg.WriteUint8(0x01) // oldStackPos
 	AddPosition(msg, to)
 	msg.WriteUint8(code)
-	msg.WriteUint16(0x63) // Creatureturn? In client's debug error.txt this is the "Parameter" field (0x63 == -1)
 	AddMapArea(msg, m, to, offset, width, height)
 	SendMessage(c, msg)
 	return true
@@ -173,6 +172,7 @@ func SendAddCreature(c net.Conn, character *game.Creature, m *game.Map) {
 	tile := m.GetTile(character.Position)
 	tile.AddCreature(character)
 	res.WriteUint8(0x64)
+	AddPosition(res, character.Position)
 	AddMapArea(res, m, character.Position, game.Offset{X: -8, Y: -6, Z: 0}, 18, 14)
 	AddMagicEffect(res, character.Position, 0x0a)
 	AddInventory(res, character)
@@ -277,7 +277,6 @@ func AddInventory(msg *Message, c *game.Creature) {
 // AddMapArea ..
 // TODO: add skip functionality
 func AddMapArea(msg *Message, m *game.Map, pos game.Position, offset game.Offset, width, height uint16) {
-	AddPosition(msg, pos)
 	pos.Offset(offset)
 	if pos.Z < 8 {
 		for z := (int8)(7); z > -1; z-- {
