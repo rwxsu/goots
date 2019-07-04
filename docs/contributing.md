@@ -6,7 +6,8 @@ Pull Requests
 
 Architecture
 ------------
-- 
+- Use Golang's standard library unless you can provide a *very* good reason not to
+
 
 <br>
 
