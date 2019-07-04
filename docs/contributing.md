@@ -13,4 +13,5 @@ Architecture
 
 Coding Style
 ------------
+- Format your code with `gofmt`
 - Use longer descriptive names for types and functions: such as `message` instead of `msg`. This does not apply to receiver arguments, parameters and variables inside functions.
