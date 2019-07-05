@@ -1,5 +1,9 @@
 package game
 
+import (
+	"fmt"
+)
+
 // Direction
 const (
 	North uint8 = iota
@@ -23,6 +27,15 @@ func (pos *Position) Offset(offset Offset) {
 	pos.X += (uint16)(offset.X)
 	pos.Y += (uint16)(offset.Y)
 	pos.Z += (uint8)(offset.Z)
+}
+
+// Equals checks if two positions are the same.
+func (pos *Position) Equals(other Position) bool {
+	return pos.X == other.X && pos.Y == other.Y && pos.Z == other.Z
+}
+
+func (pos *Position) String() string {
+	return fmt.Sprintf("X:%d, Y:%d, Z:%d", pos.X, pos.Y, pos.Z)
 }
 
 // Light has the same structure for both creatures and world
