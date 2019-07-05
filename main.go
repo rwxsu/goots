@@ -10,12 +10,11 @@ import (
 )
 
 var connectionManager network.ConnectionManager
-var m game.Map
 
 func main() {
 	const sectors = "data/map/sectors/*"
 	filenames, _ := filepath.Glob(sectors)
-	m = make(game.Map)
+	m := make(game.Map)
 
 	for _, fn := range filenames {
 		m.LoadSector(fn)
