@@ -6,6 +6,7 @@ Pull Requests
 
 Architecture
 ------------
+- TDD (https://en.wikipedia.org/wiki/Test-driven_development)
 - Use Golang's standard library unless you can provide a *very* good reason not to
 
 
