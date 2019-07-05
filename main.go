@@ -9,15 +9,19 @@ import (
 	"github.com/rwxsu/goot/network"
 )
 
-func main() {
-	m := make(game.Map)
+var connectionManager network.ConnectionManager
+var m game.Map
 
+func main() {
 	const sectors = "data/map/sectors/*"
 	filenames, _ := filepath.Glob(sectors)
+	m = make(game.Map)
 
 	for _, fn := range filenames {
 		m.LoadSector(fn)
 	}
+
+	connectionManager = network.NewConnectionManager()
 
 	l, err := net.Listen("tcp", ":7171")
 	if err != nil {
@@ -39,6 +43,13 @@ func acceptConnections(l net.Listener, m game.Map) {
 }
 
 func handleConnection(c net.Conn, m game.Map) {
+	var tibiaConnection *network.TibiaConnection
+	if tibiaConnection = connectionManager.GetByConn(c); tibiaConnection == nil {
+		tibiaConnection = &network.TibiaConnection{
+			Connection: c,
+		}
+	}
+
 	// Placeholder player
 	player := game.Creature{
 		ID:        0x04030201,
@@ -75,7 +86,7 @@ func handleConnection(c net.Conn, m game.Map) {
 	}
 connectionLoop:
 	for {
-		req := network.RecvMessage(c)
+		req := network.RecvMessage(tibiaConnection.Connection)
 		if req == nil {
 			return
 		}
@@ -84,23 +95,29 @@ connectionLoop:
 		case 0x01: // request character list
 			req.SkipBytes(2) // os := req.ReadUint16()
 			if req.ReadUint16() != 740 {
-				network.SendInvalidClientVersion(c)
+				network.SendInvalidClientVersion(tibiaConnection.Connection)
 				break connectionLoop
 			}
-			network.SendCharacterList(c)
+
+			network.SendCharacterList(tibiaConnection.Connection)
 			break connectionLoop
 		case 0x0a: // request character login
 			req.SkipBytes(2) // os := req.ReadUint16()
 			if req.ReadUint16() != 740 {
-				network.SendInvalidClientVersion(c)
+				network.SendInvalidClientVersion(tibiaConnection.Connection)
 				break connectionLoop
 			}
-			network.SendAddCreature(c, &player, &m)
+
+			tibiaConnection.Map = &m
+			tibiaConnection.Player = &player
+			connectionManager.Add(tibiaConnection)
+			network.SendAddCreature(tibiaConnection.Connection, tibiaConnection.Player, tibiaConnection.Map)
 		case 0x14: // logout
-			m.GetTile(player.Position).RemoveCreature(&player)
+			tibiaConnection.Map.GetTile(tibiaConnection.Player.Position).RemoveCreature(tibiaConnection.Player)
+			connectionManager.Del(tibiaConnection)
 			break connectionLoop
 		default:
-			network.ParseCommand(c, req, &player, &m, code)
+			network.ParseCommand(tibiaConnection, req, code)
 		}
 	}
 	if err := c.Close(); err != nil {
