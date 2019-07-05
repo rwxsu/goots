@@ -1,6 +1,7 @@
 Pull Requests
 -------------
 - Every PR must include test (https://golang.org/pkg/testing/)
+- Keep PRs small
 
 <br>
 
