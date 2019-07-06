@@ -66,12 +66,44 @@ type Outfit struct {
 	Feet uint8
 }
 
+func NewPlayer(id uint32, name string, pos Position) *Creature {
+	return &Creature{
+		Access:    Regular,
+		World:     World{Name: "test", Port: 7171, Light: Light{Color: 0x7, Level: 0xd7}},
+		ID:        id,
+		Name:      name,
+		Position:  pos,
+		Direction: South,
+		Outfit:    Outfit{Type: 0x80, Head: 0x50, Body: 0x50, Legs: 0x50, Feet: 0x50},
+		Speed:     60000,
+		Skull:     0,
+		Party:     0,
+		Cap:       100,
+		HealthNow: 50,
+		HealthMax: 100,
+		ManaNow:   50,
+		ManaMax:   100,
+		Combat:    Skill{Experience: 4200, Level: 8, Percent: 0},
+		Magic:     Skill{Level: 10, Percent: 50},
+		Fist:      Skill{Level: 10, Percent: 50},
+		Club:      Skill{Level: 10, Percent: 50},
+		Sword:     Skill{Level: 10, Percent: 50},
+		Axe:       Skill{Level: 10, Percent: 50},
+		Distance:  Skill{Level: 10, Percent: 50},
+		Shielding: Skill{Level: 10, Percent: 50},
+		Fishing:   Skill{Level: 10, Percent: 50},
+		Light:     Light{Color: 0xd7, Level: 0xd7},
+		Icons:     0,
+		Tactic:    Tactic{FightMode: 0, ChaseOpponent: 0, AttackPlayers: 0},
+	}
+}
+
 type Creature struct {
-	Position  Position
 	Access    uint8
 	World     World
 	ID        uint32
 	Name      string
+	Position  Position
 	Direction uint8
 	Outfit    Outfit
 	Speed     uint16
