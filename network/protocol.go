@@ -13,38 +13,38 @@ const (
 	PlayerMessageTypeCancel uint8 = 0x17
 )
 
-func ParseCommand(tibiaConnection *TibiaConnection, msg *Message, code uint8) {
+func ParseCommand(tc *TibiaConnection, msg *Message, code uint8) {
 	switch code {
 	case 0x65:
-		if !SendMoveCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.North, code) {
-			SendSnapback(tibiaConnection.Connection, tibiaConnection.Player)
+		if !SendMoveCreature(tc, game.North, code) {
+			SendSnapback(tc)
 		}
 	case 0x66:
-		if !SendMoveCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.East, code) {
-			SendSnapback(tibiaConnection.Connection, tibiaConnection.Player)
+		if !SendMoveCreature(tc, game.East, code) {
+			SendSnapback(tc)
 		}
 	case 0x67:
-		if !SendMoveCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.South, code) {
-			SendSnapback(tibiaConnection.Connection, tibiaConnection.Player)
+		if !SendMoveCreature(tc, game.South, code) {
+			SendSnapback(tc)
 		}
 	case 0x68:
-		if !SendMoveCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.West, code) {
-			SendSnapback(tibiaConnection.Connection, tibiaConnection.Player)
+		if !SendMoveCreature(tc, game.West, code) {
+			SendSnapback(tc)
 		}
 	case 0x6f:
-		SendTurnCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.North)
+		SendTurnCreature(tc, game.North)
 	case 0x70:
-		SendTurnCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.East)
+		SendTurnCreature(tc, game.East)
 	case 0x71:
-		SendTurnCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.South)
+		SendTurnCreature(tc, game.South)
 	case 0x72:
-		SendTurnCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.West)
+		SendTurnCreature(tc, game.West)
 	case 0xa0:
-		tibiaConnection.Player.Tactic.FightMode = msg.ReadUint8()
-		tibiaConnection.Player.Tactic.ChaseOpponent = msg.ReadUint8()
-		tibiaConnection.Player.Tactic.AttackPlayers = msg.ReadUint8()
+		tc.Player.Tactic.FightMode = msg.ReadUint8()
+		tc.Player.Tactic.ChaseOpponent = msg.ReadUint8()
+		tc.Player.Tactic.AttackPlayers = msg.ReadUint8()
 	default:
-		SendSnapback(tibiaConnection.Connection, tibiaConnection.Player)
+		SendSnapback(tc)
 	}
 }
 
@@ -81,25 +81,25 @@ func SendCharacterList(c net.Conn) {
 	SendMessage(c, res)
 }
 
-func SendSnapback(c net.Conn, player *game.Creature) {
+func SendSnapback(tc *TibiaConnection) {
 	msg := NewMessage()
 	msg.WriteUint8(0xb5)
-	msg.WriteUint8(player.Direction)
-	SendMessage(c, msg)
-	SendCancelMessage(c, "Sorry, not possible.")
+	msg.WriteUint8(tc.Player.Direction)
+	SendMessage(tc.Connection, msg)
+	SendCancelMessage(tc, "Sorry, not possible.")
 }
 
-func SendCancelMessage(c net.Conn, str string) {
+func SendCancelMessage(tc *TibiaConnection, str string) {
 	msg := NewMessage()
 	AddPlayerMessage(msg, str, PlayerMessageTypeCancel)
-	SendMessage(c, msg)
+	SendMessage(tc.Connection, msg)
 }
 
-func SendMoveCreature(c net.Conn, m *game.Map, player *game.Creature, direction, code uint8) bool {
+func SendMoveCreature(tc *TibiaConnection, direction, code uint8) bool {
 	var offset game.Offset
 	var width, height uint16
-	from := player.Position
-	to := player.Position
+	from := tc.Player.Position
+	to := tc.Player.Position
 	switch direction {
 	case game.North:
 		offset.X = -8
@@ -126,7 +126,7 @@ func SendMoveCreature(c net.Conn, m *game.Map, player *game.Creature, direction,
 		height = 14
 		to.X--
 	}
-	if !m.MoveCreature(player, to, direction) {
+	if !tc.Map.MoveCreature(tc.Player, to, direction) {
 		return false
 	}
 	msg := NewMessage()
@@ -135,56 +135,56 @@ func SendMoveCreature(c net.Conn, m *game.Map, player *game.Creature, direction,
 	msg.WriteUint8(0x01) // oldStackPos
 	AddPosition(msg, to)
 	msg.WriteUint8(code)
-	AddMapArea(msg, m, to, offset, width, height)
-	SendMessage(c, msg)
+	AddMapArea(msg, tc.Map, to, offset, width, height)
+	SendMessage(tc.Connection, msg)
 	return true
 }
 
-func SendTurnCreature(c net.Conn, m *game.Map, player *game.Creature, direction uint8) {
-	player.Direction = direction
+func SendTurnCreature(tc *TibiaConnection, direction uint8) {
+	tc.Player.Direction = direction
 	msg := NewMessage()
 	msg.WriteUint8(0x6b)
-	AddPosition(msg, player.Position)
+	AddPosition(msg, tc.Player.Position)
 	msg.WriteUint8(1)
 	msg.WriteUint16(0x63)
-	msg.WriteUint32(player.ID)
-	msg.WriteUint8(player.Direction)
-	SendMessage(c, msg)
+	msg.WriteUint32(tc.Player.ID)
+	msg.WriteUint8(tc.Player.Direction)
+	SendMessage(tc.Connection, msg)
 }
 
-func SendAddCreature(c net.Conn, character *game.Creature, m *game.Map) {
+func SendAddCreature(tc *TibiaConnection) {
 	res := NewMessage()
 	res.WriteUint8(0x0a)
-	res.WriteUint32(character.ID) // ID
+	res.WriteUint32(tc.Player.ID) // ID
 	res.WriteUint16(0x32)         // ?
 	// can report bugs?
-	if character.Access > game.Regular {
+	if tc.Player.Access > game.Regular {
 		res.WriteUint8(0x01)
 	} else {
 		res.WriteUint8(0x00)
 	}
-	if character.Access >= game.Gamemaster {
+	if tc.Player.Access >= game.Gamemaster {
 		res.WriteUint8(0x0b)
 		for i := 0; i < 32; i++ {
 			res.WriteUint8(0xff)
 		}
 	}
-	tile := m.GetTile(character.Position)
-	tile.AddCreature(character)
+	tile := tc.Map.GetTile(tc.Player.Position)
+	tile.AddCreature(tc.Player)
 	res.WriteUint8(0x64)
-	AddPosition(res, character.Position)
-	AddMapArea(res, m, character.Position, game.Offset{X: -8, Y: -6, Z: 0}, 18, 14)
-	AddMagicEffect(res, character.Position, 0x0a)
-	AddInventory(res, character)
-	AddStats(res, character)
-	AddSkills(res, character)
-	AddWorldLight(res, &character.World)
-	AddCreatureLight(res, character)
-	AddPlayerMessage(res, fmt.Sprintf("Welcome, %s.", character.Name), PlayerMessageTypeInfo)
+	AddPosition(res, tc.Player.Position)
+	AddMapArea(res, tc.Map, tc.Player.Position, game.Offset{X: -8, Y: -6, Z: 0}, 18, 14)
+	AddMagicEffect(res, tc.Player.Position, 0x0a)
+	AddInventory(res, tc.Player)
+	AddStats(res, tc.Player)
+	AddSkills(res, tc.Player)
+	AddWorldLight(res, tc.Player.World)
+	AddCreatureLight(res, tc.Player)
+	AddPlayerMessage(res, fmt.Sprintf("Welcome, %s.", tc.Player.Name), PlayerMessageTypeInfo)
 	AddPlayerMessage(res, "TODO: Last Login String 01-01-1970", PlayerMessageTypeInfo)
-	AddCreatureLight(res, character)
-	AddIcons(res, character)
-	SendMessage(c, res)
+	AddCreatureLight(res, tc.Player)
+	AddIcons(res, tc.Player)
+	SendMessage(tc.Connection, res)
 }
 
 func AddCreatureLight(msg *Message, c *game.Creature) {
@@ -194,7 +194,7 @@ func AddCreatureLight(msg *Message, c *game.Creature) {
 	msg.WriteUint8(c.Light.Color)
 }
 
-func AddWorldLight(msg *Message, w *game.World) {
+func AddWorldLight(msg *Message, w game.World) {
 	msg.WriteUint8(0x82)
 	msg.WriteUint8(w.Light.Level)
 	msg.WriteUint8(w.Light.Color)
@@ -317,7 +317,7 @@ func AddCreature(msg *Message, c *game.Creature) {
 	msg.WriteUint32(c.ID)
 	msg.WriteString(c.Name)
 	msg.WriteUint8((uint8)(c.HealthNow*100/c.HealthMax) + 1)
-	msg.WriteUint8(c.Direction) // look dir
+	msg.WriteUint8(c.Direction)
 	msg.WriteUint8(c.Outfit.Type)
 	msg.WriteUint8(c.Outfit.Head)
 	msg.WriteUint8(c.Outfit.Body)
@@ -331,7 +331,7 @@ func AddCreature(msg *Message, c *game.Creature) {
 }
 
 // AddTile adds all the tile items and creatures WITHOUT the end of tile
-//delimeter (0xSKIP-0xff)
+// delimeter (0xSKIP-0xff)
 func AddTile(msg *Message, tile *game.Tile) {
 	for _, i := range tile.Items {
 		msg.WriteUint16(i.ID)

@@ -4,7 +4,7 @@ import (
 	"net"
 )
 
-const debug = true
+const debug = false
 
 // RecvMessage reads the incoming message length (first two bytes), followed by
 // how many bytes the incoming message length is.

@@ -7,51 +7,40 @@ import (
 	"github.com/rwxsu/goot/game"
 )
 
-// ConnectionManager should be used to management of connections
+// ConnectionManager is used to manage TibiaConnections
 type ConnectionManager struct {
-	connections []*TibiaConnection
+	connections map[net.Conn]*TibiaConnection
 	lock        *sync.Mutex
 }
 
+// NewConnectionManager ...
 func NewConnectionManager() ConnectionManager {
 	return ConnectionManager{
-		lock: &sync.Mutex{},
+		connections: make(map[net.Conn]*TibiaConnection),
+		lock:        &sync.Mutex{},
 	}
 }
 
-// Add should be used to add TibiaConnection to ConnectionManager
-func (connectionManager *ConnectionManager) Add(tibiaConnection *TibiaConnection) {
-	connectionManager.lock.Lock()
-	connectionManager.connections = append(connectionManager.connections, tibiaConnection)
-	connectionManager.lock.Unlock()
+// Add a new TibiaConnection to ConnectionManager
+func (cm *ConnectionManager) Add(tc *TibiaConnection) {
+	cm.lock.Lock()
+	cm.connections[tc.Connection] = tc
+	cm.lock.Unlock()
 }
 
-// GetByConn retrieve TibiaConnection by net.Conn
-func (connectionManager *ConnectionManager) GetByConn(conn net.Conn) *TibiaConnection {
-	for _, current := range connectionManager.connections {
-		if current.Connection == conn {
-			return current
-		}
-	}
-
-	return nil
+// ByConnection retrieves TibiaConnection by net.Conn
+func (cm *ConnectionManager) ByConnection(conn net.Conn) *TibiaConnection {
+	return cm.connections[conn]
 }
 
-// Del should be used to remove TibiaConnection from ConnectionManager
-func (connectionManager *ConnectionManager) Del(tibiaConnection *TibiaConnection) {
-	connectionManager.lock.Lock()
-
-	for i, current := range connectionManager.connections {
-		if current == tibiaConnection {
-			connectionManager.connections = append(connectionManager.connections[:i], connectionManager.connections[i+1:]...)
-			break
-		}
-	}
-
-	connectionManager.lock.Unlock()
+// Delete a TibiaConnection from ConnectionManager
+func (cm *ConnectionManager) Delete(tc *TibiaConnection) {
+	cm.lock.Lock()
+	delete(cm.connections, tc.Connection)
+	cm.lock.Unlock()
 }
 
-// TibiaConnection is a struct to store pair of connection and player
+// TibiaConnection ...
 type TibiaConnection struct {
 	Connection net.Conn
 	Player     *game.Creature
