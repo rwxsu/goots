@@ -100,7 +100,7 @@ type Player struct {
 	healthMax uint16
 	ManaNow   uint16
 	ManaMax   uint16
-	Combat    Skill
+	Combat    Skill // Regular level
 	Magic     Skill
 	Fist      Skill
 	Club      Skill

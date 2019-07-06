@@ -39,7 +39,8 @@ type Offset struct {
 	X, Y, Z int8
 }
 
-// Offset the position by the given positive or negative offset
+// Offset the position by the given positive or negative offset. I know it looks
+// like a hack, but it works and is the idiomatic way according to StackOverflow
 func (pos *Position) Offset(offset Offset) {
 	pos.X += (uint16)(offset.X)
 	pos.Y += (uint16)(offset.Y)
