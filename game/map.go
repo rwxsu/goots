@@ -47,6 +47,14 @@ func (m *Map) InitializeSector(spos SectorPosition, groundID uint16) {
 	}
 }
 
+// AddCreatureToSectorCenter adds a creature to the center of the sector
+func (m *Map) AddCreatureToSectorCenter(spos SectorPosition, c *Creature) {
+	center := Position{spos.X*32 + 15, spos.Y*32 + 15, spos.Z}
+	m.GetTile(center).AddCreature(c)
+	c.Position = center
+	c.Direction = South
+}
+
 func (m *Map) SetTile(tile *Tile) {
 	t := m.GetTile(tile.Position)
 	if t != nil {

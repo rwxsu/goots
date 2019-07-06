@@ -11,7 +11,7 @@ type TestMap struct {
 
 func TestInitializeSector(t *testing.T) {
 	m := make(Map)
-	spos := SectorPosition{X: 1000, Y: 1000, Z: 7}
+	spos := SectorPosition{X: 1, Y: 1, Z: 1}
 	m.InitializeSector(spos, 104)
 	count := 0
 	for offsetX := (uint16)(0); offsetX < 32; offsetX++ {
@@ -27,50 +27,38 @@ func TestInitializeSector(t *testing.T) {
 	}
 }
 
-func NewTestMap(t *testing.T) *TestMap {
-	// Setup a 32x32, single-level map.
-	spos := SectorPosition{X: 1, Y: 1, Z: 1}
+func TestAddCreatureToSectorCenter(t *testing.T) {
 	m := make(Map)
+	c := Creature{ID: 1}
+	spos := SectorPosition{X: 1, Y: 1, Z: 1}
 	m.InitializeSector(spos, 104)
-	// Add a creature to the center of the map.
-	centerPos := Position{X: (spos.X * 32) + 15, Y: (spos.Y * 32) + 15, Z: 1}
-	creature := Creature{ID: 1234, Position: centerPos}
-	tile := m.GetTile(centerPos)
-	if tile == nil {
-		t.Errorf("No tile found at: %s", centerPos.String())
-	}
-	tile.AddCreature(&creature)
-	return &TestMap{&m, &creature}
-}
-
-func TestMoveCreatureNorth(t *testing.T) {
-	testMap := NewTestMap(t)
-	endPos := Position{X: testMap.c.Position.X, Y: testMap.c.Position.Y - 1, Z: testMap.c.Position.Z}
-	if !testMap.m.MoveCreature(testMap.c, endPos, North) {
-		t.Error("Failed to move creature.")
+	m.AddCreatureToSectorCenter(spos, &c)
+	tile := m.GetTile(Position{X: spos.X*32 + 15, Y: spos.Y*32 + 15, Z: spos.Z})
+	if len(tile.Creatures) == 0 {
+		t.Error("creature not found at sector center")
 	}
 }
 
-func TestMoveCreatureEast(t *testing.T) {
-	testMap := NewTestMap(t)
-	endPos := Position{X: testMap.c.Position.X + 1, Y: testMap.c.Position.Y, Z: testMap.c.Position.Z}
-	if !testMap.m.MoveCreature(testMap.c, endPos, East) {
-		t.Error("Failed to move creature.")
+func TestMoveCreature(t *testing.T) {
+	m := make(Map)
+	c := Creature{ID: 1}
+	spos := SectorPosition{X: 1, Y: 1, Z: 1}
+	center := Position{spos.X*32 + 15, spos.Y*32 + 15, spos.Z}
+	m.InitializeSector(spos, 104)
+	m.AddCreatureToSectorCenter(spos, &c)
+	if !m.MoveCreature(&c, Position{c.X, c.Y - 1, c.Z}, North) {
+		t.Error("could not move creature to the north")
 	}
-}
-
-func TestMoveCreatureSouth(t *testing.T) {
-	testMap := NewTestMap(t)
-	endPos := Position{X: testMap.c.Position.X, Y: testMap.c.Position.Y + 1, Z: testMap.c.Position.Z}
-	if !testMap.m.MoveCreature(testMap.c, endPos, South) {
-		t.Error("Failed to move creature.")
+	if !m.MoveCreature(&c, Position{c.X + 1, c.Y, c.Z}, East) {
+		t.Error("could not move creature to the east")
 	}
-}
-
-func TestMoveCreatureWest(t *testing.T) {
-	testMap := NewTestMap(t)
-	endPos := Position{X: testMap.c.Position.X - 1, Y: testMap.c.Position.Y, Z: testMap.c.Position.Z}
-	if !testMap.m.MoveCreature(testMap.c, endPos, West) {
-		t.Error("Failed to move creature.")
+	if !m.MoveCreature(&c, Position{c.X, c.Y + 1, c.Z}, South) {
+		t.Error("could not move creature to the south")
+	}
+	if !m.MoveCreature(&c, Position{c.X - 1, c.Y, c.Z}, West) {
+		t.Error("could not move creature to the west")
+	}
+	if c.Position != center {
+		t.Error("creature did not returned to center")
 	}
 }

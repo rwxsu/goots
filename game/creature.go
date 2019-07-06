@@ -99,11 +99,11 @@ func NewPlayer(id uint32, name string, pos Position) *Creature {
 }
 
 type Creature struct {
-	Access    uint8
-	World     World
-	ID        uint32
-	Name      string
-	Position  Position
+	Access uint8
+	World  World
+	ID     uint32
+	Name   string
+	Position
 	Direction uint8
 	Outfit    Outfit
 	Speed     uint16
