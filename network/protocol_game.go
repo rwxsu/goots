@@ -2,35 +2,20 @@ package network
 
 import (
 	"fmt"
-	"net"
 
 	"github.com/rwxsu/goot/game"
-)
-
-// Player message type
-const (
-	PlayerMessageTypeInfo   uint8 = 0x15
-	PlayerMessageTypeCancel uint8 = 0x17
 )
 
 func ParseCommand(tc *TibiaConnection, msg *Message, code uint8) {
 	switch code {
 	case 0x65:
-		if !SendMoveCreature(tc, game.North, code) {
-			SendSnapback(tc)
-		}
+		SendMoveCreature(tc, game.North, code)
 	case 0x66:
-		if !SendMoveCreature(tc, game.East, code) {
-			SendSnapback(tc)
-		}
+		SendMoveCreature(tc, game.East, code)
 	case 0x67:
-		if !SendMoveCreature(tc, game.South, code) {
-			SendSnapback(tc)
-		}
+		SendMoveCreature(tc, game.South, code)
 	case 0x68:
-		if !SendMoveCreature(tc, game.West, code) {
-			SendSnapback(tc)
-		}
+		SendMoveCreature(tc, game.West, code)
 	case 0x6f:
 		SendTurnCreature(tc, game.North)
 	case 0x70:
@@ -48,39 +33,6 @@ func ParseCommand(tc *TibiaConnection, msg *Message, code uint8) {
 	}
 }
 
-func SendInvalidClientVersion(c net.Conn) {
-	msg := NewMessage()
-	msg.WriteUint8(0x0a)
-	msg.WriteString("Only protocol 7.40 allowed!")
-	SendMessage(c, msg)
-}
-
-func SendCharacterList(c net.Conn) {
-	characters := make([]game.Creature, 2)
-	characters[0].Name = "admin"
-	characters[0].World.Name = "test"
-	characters[0].World.Port = 7171
-	characters[1].Name = "rwxsu"
-	characters[1].World.Name = "test"
-	characters[1].World.Port = 7171
-	res := NewMessage()
-	res.WriteUint8(0x14) // MOTD
-	res.WriteString("Welcome to GoOT.")
-	res.WriteUint8(0x64) // character list
-	res.WriteUint8((uint8)(len(characters)))
-	for i := 0; i < len(characters); i++ {
-		res.WriteString(characters[i].Name)
-		res.WriteString(characters[i].World.Name)
-		res.WriteUint8(127)
-		res.WriteUint8(0)
-		res.WriteUint8(0)
-		res.WriteUint8(1)
-		res.WriteUint16(characters[i].World.Port)
-	}
-	res.WriteUint16(0) // premium days
-	SendMessage(c, res)
-}
-
 func SendSnapback(tc *TibiaConnection) {
 	msg := NewMessage()
 	msg.WriteUint8(0xb5)
@@ -91,11 +43,11 @@ func SendSnapback(tc *TibiaConnection) {
 
 func SendCancelMessage(tc *TibiaConnection, str string) {
 	msg := NewMessage()
-	AddPlayerMessage(msg, str, PlayerMessageTypeCancel)
+	AddPlayerMessage(msg, str, game.PlayerMessageTypeCancel)
 	SendMessage(tc.Connection, msg)
 }
 
-func SendMoveCreature(tc *TibiaConnection, direction, code uint8) bool {
+func SendMoveCreature(tc *TibiaConnection, direction, code uint8) {
 	var offset game.Offset
 	var width, height uint16
 	from := tc.Player.Position
@@ -127,7 +79,7 @@ func SendMoveCreature(tc *TibiaConnection, direction, code uint8) bool {
 		to.X--
 	}
 	if !tc.Map.MoveCreature(tc.Player, to, direction) {
-		return false
+		SendSnapback(tc)
 	}
 	msg := NewMessage()
 	msg.WriteUint8(0x6d)
@@ -137,7 +89,6 @@ func SendMoveCreature(tc *TibiaConnection, direction, code uint8) bool {
 	msg.WriteUint8(code)
 	AddMapArea(msg, tc.Map, to, offset, width, height)
 	SendMessage(tc.Connection, msg)
-	return true
 }
 
 func SendTurnCreature(tc *TibiaConnection, direction uint8) {
@@ -180,8 +131,8 @@ func SendAddCreature(tc *TibiaConnection) {
 	AddSkills(res, tc.Player)
 	AddWorldLight(res, tc.Player.World)
 	AddCreatureLight(res, tc.Player)
-	AddPlayerMessage(res, fmt.Sprintf("Welcome, %s.", tc.Player.Name), PlayerMessageTypeInfo)
-	AddPlayerMessage(res, "TODO: Last Login String 01-01-1970", PlayerMessageTypeInfo)
+	AddPlayerMessage(res, fmt.Sprintf("Welcome, %s.", tc.Player.Name), game.PlayerMessageTypeInfo)
+	AddPlayerMessage(res, "TODO: Last Login String 01-01-1970", game.PlayerMessageTypeInfo)
 	AddCreatureLight(res, tc.Player)
 	AddIcons(res, tc.Player)
 	SendMessage(tc.Connection, res)
@@ -274,29 +225,45 @@ func AddInventory(msg *Message, c *game.Creature) {
 	msg.WriteUint8(33)     // count
 }
 
-// AddMapArea ..
-// TODO: add skip functionality
-func AddMapArea(msg *Message, m *game.Map, pos game.Position, offset game.Offset, width, height uint16) {
+// AddMapArea adds the area starting at position+offset until width and height
+// is reached. Returns the number of tiles (counting nil)
+func AddMapArea(msg *Message, m *game.Map, pos game.Position, offset game.Offset, width, height uint16) int {
 	pos.Offset(offset)
+	count := 0
+	skip := (uint8)(0)
 	if pos.Z < 8 {
 		for z := (int8)(7); z > -1; z-- {
 			for x := (uint16)(0); x < width; x++ {
 				for y := (uint16)(0); y < height; y++ {
 					tile := m.GetTile(game.Position{X: pos.X + x, Y: pos.Y + y, Z: (uint8)(z)})
 					if tile != nil {
+						if skip > 0 {
+							msg.WriteUint8(skip - 1)
+							msg.WriteUint8(0xff)
+							skip = 0
+						}
 						AddTile(msg, tile)
-						msg.WriteUint8(0x00)
-						msg.WriteUint8(0xff)
-					} else {
-						msg.WriteUint8(0x00)
-						msg.WriteUint8(0xff)
 					}
+					skip++
+					if skip == 0xff {
+						msg.WriteUint8(0xff)
+						msg.WriteUint8(0xff)
+						skip = 0
+					}
+					count++
 				}
 			}
 		}
 	} else { // TODO: underground
 
 	}
+	// Remainder
+	if skip > 0 {
+		msg.WriteUint8(skip - 1)
+		msg.WriteUint8(0xff)
+		skip = 0
+	}
+	return count
 }
 
 func AddPosition(msg *Message, pos game.Position) {

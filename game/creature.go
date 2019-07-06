@@ -9,6 +9,12 @@ const (
 	God
 )
 
+// Player message type
+const (
+	PlayerMessageTypeInfo   uint8 = 0x15
+	PlayerMessageTypeCancel uint8 = 0x17
+)
+
 // Slot
 const (
 	SlotHead uint8 = iota + 1

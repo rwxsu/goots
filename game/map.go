@@ -33,6 +33,20 @@ type Sector [32]*Column
 // Map is a collection of sectors loaded from data/map/sectors/*.sec
 type Map map[SectorPosition]*Sector
 
+// InitializeSector a sector with the given ground item id
+func (m *Map) InitializeSector(spos SectorPosition, groundID uint16) {
+	(*m)[spos] = new(Sector)
+	for offsetX := (uint16)(0); offsetX < 32; offsetX++ {
+		(*m)[spos][offsetX] = new(Column)
+		for offsetY := (uint16)(0); offsetY < 32; offsetY++ {
+			tile := new(Tile)
+			tile.AddItem(&Item{groundID})
+			tile.SetPosition(spos.X*32+offsetX, spos.Y*32+offsetY, spos.Z)
+			(*m)[spos][offsetX][offsetY] = tile
+		}
+	}
+}
+
 func (m *Map) SetTile(tile *Tile) {
 	t := m.GetTile(tile.Position)
 	if t != nil {
@@ -96,7 +110,6 @@ func (m *Map) LoadSector(filename string) {
 			}
 		}
 	}
-
 	fmt.Printf("[%v]\n", time.Since(begin))
 }
 
