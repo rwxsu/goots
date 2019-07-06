@@ -9,8 +9,6 @@ type TestMap struct {
 	c *Creature
 }
 
-// TODO: Test fails: Golang's garbage collector screws this up somehow, because
-// the tiles get initialized.
 func TestInitializeSector(t *testing.T) {
 	m := make(Map)
 	spos := SectorPosition{X: 1000, Y: 1000, Z: 7}
@@ -18,7 +16,7 @@ func TestInitializeSector(t *testing.T) {
 	count := 0
 	for offsetX := (uint16)(0); offsetX < 32; offsetX++ {
 		for offsetY := (uint16)(0); offsetY < 32; offsetY++ {
-			tile := m.GetTile(Position{spos.X + offsetX, spos.Y + offsetY, spos.Z})
+			tile := m.GetTile(Position{spos.X*32 + offsetX, spos.Y*32 + offsetY, spos.Z})
 			if tile == nil {
 				count++
 			}
