@@ -55,6 +55,6 @@ func TestMoveCreature(t *testing.T) {
 		t.Error("could not move creature to the west")
 	}
 	if !p.Position().Equals(Center(spos)) {
-		t.Errorf("creature did not returned to center: expected {%s} got {%s}", Center(spos).String(), p.Position().String())
+		t.Errorf("creature did not return to center: expected position {%s} got {%s}", Center(spos).String(), p.Position().String())
 	}
 }

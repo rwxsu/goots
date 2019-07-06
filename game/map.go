@@ -26,9 +26,8 @@ func (m *Map) InitializeSector(spos SectorPosition, groundID uint16) {
 	for offsetX := (uint16)(0); offsetX < 32; offsetX++ {
 		(*m)[spos][offsetX] = new(Column)
 		for offsetY := (uint16)(0); offsetY < 32; offsetY++ {
-			tile := new(Tile)
+			tile := NewTile(Position{X: spos.X*32 + offsetX, Y: spos.Y*32 + offsetY, Z: spos.Z})
 			tile.AddItem(&Item{groundID})
-			tile.SetPosition(spos.X*32+offsetX, spos.Y*32+offsetY, spos.Z)
 			(*m)[spos][offsetX][offsetY] = tile
 		}
 	}
@@ -84,8 +83,7 @@ func (m *Map) LoadSector(filename string) {
 	for offsetX := (uint16)(0); offsetX < 32; offsetX++ {
 		(*m)[spos][offsetX] = new(Column)
 		for offsetY := (uint16)(0); offsetY < 32; offsetY++ {
-			var tile Tile
-			tile.SetPosition(spos.X*32+offsetX, spos.Y*32+offsetY, spos.Z)
+			tile := NewTile(Position{X: spos.X*32 + offsetX, Y: spos.Y*32 + offsetY, Z: spos.Z})
 			p.NextToken() // skip offsetX
 			p.NextToken() // skip offsetY
 			itemids := p.NextToken()
@@ -98,7 +96,7 @@ func (m *Map) LoadSector(filename string) {
 				panic("in LoadSector: could not get item ids")
 			}
 			if len(tile.Items) > 0 {
-				(*m)[spos][offsetX][offsetY] = &tile
+				(*m)[spos][offsetX][offsetY] = tile
 			} else {
 				(*m)[spos][offsetX][offsetY] = nil
 			}
@@ -114,9 +112,7 @@ func (m *Map) MoveCreature(c Creature, pos Position, direction uint8) bool {
 	if from == nil || to == nil {
 		return false
 	}
-	if !from.RemoveCreature(c) {
-		return false
-	}
+	from.RemoveCreature(c)
 	to.AddCreature(c)
 	c.SetPosition(pos)
 	c.SetDirection(direction)
