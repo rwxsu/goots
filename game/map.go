@@ -11,19 +11,6 @@ import (
 	"github.com/rwxsu/goot/parser"
 )
 
-// SectorPosition contains the position equal to the .sec filename
-//
-// To get the real in-game position, calculate:
-//		x = SectorPosition.X * 32 + x offset
-//		y = SectorPosition.Y * 32 + y offset
-//		z = SectorPosition.Z
-//
-//		E.g.: 0999-0998-07.sec (02-04: Content={102})
-//	 		x = 999 * 32 + 2
-//	 		y = 998 * 32 + 4
-//			z = 7
-type SectorPosition Position
-
 // Column 32 tiles (stacked below each other visually)
 type Column [32]*Tile
 
@@ -49,9 +36,8 @@ func (m *Map) InitializeSector(spos SectorPosition, groundID uint16) {
 
 // AddCreatureToSectorCenter adds a creature to the center of the sector
 func (m *Map) AddCreatureToSectorCenter(spos SectorPosition, c *Creature) {
-	center := Position{spos.X*32 + 15, spos.Y*32 + 15, spos.Z}
-	m.GetTile(center).AddCreature(c)
-	c.Position = center
+	m.GetTile(Center(spos)).AddCreature(c)
+	c.Position = Center(spos)
 	c.Direction = South
 }
 
@@ -136,18 +122,3 @@ func (m *Map) MoveCreature(c *Creature, pos Position, direction uint8) bool {
 	c.Direction = direction
 	return true
 }
-
-// func (m *Map) GetSpectators(pos Position) []*Creature {
-// 	pos.X = pos.X - 8
-// 	pos.Y = pos.Y - 6
-// 	var spectators []*Creature
-// 	for x := (uint16)(0); x < 18; x++ {
-// 		for y := (uint16)(0); y < 14; y++ {
-// 			tile := m.GetTile(pos)
-// 			if tile != nil {
-// 				spectators = append(spectators, tile.Creatures...)
-// 			}
-// 		}
-// 	}
-// 	return spectators
-// }

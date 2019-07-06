@@ -4,11 +4,6 @@ import (
 	"testing"
 )
 
-type TestMap struct {
-	m *Map
-	c *Creature
-}
-
 func TestInitializeSector(t *testing.T) {
 	m := make(Map)
 	spos := SectorPosition{X: 1, Y: 1, Z: 1}
@@ -33,7 +28,7 @@ func TestAddCreatureToSectorCenter(t *testing.T) {
 	spos := SectorPosition{X: 1, Y: 1, Z: 1}
 	m.InitializeSector(spos, 104)
 	m.AddCreatureToSectorCenter(spos, &c)
-	tile := m.GetTile(Position{X: spos.X*32 + 15, Y: spos.Y*32 + 15, Z: spos.Z})
+	tile := m.GetTile(Center(spos))
 	if len(tile.Creatures) == 0 {
 		t.Error("creature not found at sector center")
 	}
@@ -43,7 +38,7 @@ func TestMoveCreature(t *testing.T) {
 	m := make(Map)
 	c := Creature{ID: 1}
 	spos := SectorPosition{X: 1, Y: 1, Z: 1}
-	center := Position{spos.X*32 + 15, spos.Y*32 + 15, spos.Z}
+	center := Center(spos)
 	m.InitializeSector(spos, 104)
 	m.AddCreatureToSectorCenter(spos, &c)
 	if !m.MoveCreature(&c, Position{c.X, c.Y - 1, c.Z}, North) {
