@@ -13,38 +13,38 @@ const (
 	PlayerMessageTypeCancel uint8 = 0x17
 )
 
-func ParseCommand(c net.Conn, msg *Message, player *game.Creature, m *game.Map, code uint8) {
+func ParseCommand(tibiaConnection *TibiaConnection, msg *Message, code uint8) {
 	switch code {
 	case 0x65:
-		if !SendMoveCreature(c, m, player, game.North, code) {
-			SendSnapback(c, player)
+		if !SendMoveCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.North, code) {
+			SendSnapback(tibiaConnection.Connection, tibiaConnection.Player)
 		}
 	case 0x66:
-		if !SendMoveCreature(c, m, player, game.East, code) {
-			SendSnapback(c, player)
+		if !SendMoveCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.East, code) {
+			SendSnapback(tibiaConnection.Connection, tibiaConnection.Player)
 		}
 	case 0x67:
-		if !SendMoveCreature(c, m, player, game.South, code) {
-			SendSnapback(c, player)
+		if !SendMoveCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.South, code) {
+			SendSnapback(tibiaConnection.Connection, tibiaConnection.Player)
 		}
 	case 0x68:
-		if !SendMoveCreature(c, m, player, game.West, code) {
-			SendSnapback(c, player)
+		if !SendMoveCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.West, code) {
+			SendSnapback(tibiaConnection.Connection, tibiaConnection.Player)
 		}
 	case 0x6f:
-		SendTurnCreature(c, m, player, game.North)
+		SendTurnCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.North)
 	case 0x70:
-		SendTurnCreature(c, m, player, game.East)
+		SendTurnCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.East)
 	case 0x71:
-		SendTurnCreature(c, m, player, game.South)
+		SendTurnCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.South)
 	case 0x72:
-		SendTurnCreature(c, m, player, game.West)
+		SendTurnCreature(tibiaConnection.Connection, tibiaConnection.Map, tibiaConnection.Player, game.West)
 	case 0xa0:
-		player.Tactic.FightMode = msg.ReadUint8()
-		player.Tactic.ChaseOpponent = msg.ReadUint8()
-		player.Tactic.AttackPlayers = msg.ReadUint8()
+		tibiaConnection.Player.Tactic.FightMode = msg.ReadUint8()
+		tibiaConnection.Player.Tactic.ChaseOpponent = msg.ReadUint8()
+		tibiaConnection.Player.Tactic.AttackPlayers = msg.ReadUint8()
 	default:
-		SendSnapback(c, player)
+		SendSnapback(tibiaConnection.Connection, tibiaConnection.Player)
 	}
 }
 
