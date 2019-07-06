@@ -35,22 +35,22 @@ func (m *Map) InitializeSector(spos SectorPosition, groundID uint16) {
 }
 
 // AddCreatureToSectorCenter adds a creature to the center of the sector
-func (m *Map) AddCreatureToSectorCenter(spos SectorPosition, c *Creature) {
-	m.GetTile(Center(spos)).AddCreature(c)
-	c.Position = Center(spos)
-	c.Direction = South
+func (m *Map) AddCreatureToSectorCenter(spos SectorPosition, c Creature) {
+	m.Tile(Center(spos)).AddCreature(c)
+	c.SetPosition(Center(spos))
+	c.SetDirection(South)
 }
 
 func (m *Map) SetTile(tile *Tile) {
-	t := m.GetTile(tile.Position)
+	t := m.Tile(tile.Position)
 	if t != nil {
 		t = tile
 	}
 }
 
-// GetTile gets the SectorPosition by dividing the real x and y position by 32.
+// Tile gets the SectorPosition by dividing the real x and y position by 32.
 // Mod is used to get the remainder, which is the x and y offset.
-func (m *Map) GetTile(pos Position) *Tile {
+func (m *Map) Tile(pos Position) *Tile {
 	var spos SectorPosition
 	spos.X = pos.X / 32
 	spos.Y = pos.Y / 32
@@ -108,9 +108,9 @@ func (m *Map) LoadSector(filename string) {
 }
 
 // MoveCreature on map
-func (m *Map) MoveCreature(c *Creature, pos Position, direction uint8) bool {
-	from := m.GetTile(c.Position)
-	to := m.GetTile(pos)
+func (m *Map) MoveCreature(c Creature, pos Position, direction uint8) bool {
+	from := m.Tile(c.Position())
+	to := m.Tile(pos)
 	if from == nil || to == nil {
 		return false
 	}
@@ -118,7 +118,7 @@ func (m *Map) MoveCreature(c *Creature, pos Position, direction uint8) bool {
 		return false
 	}
 	to.AddCreature(c)
-	c.Position = pos
-	c.Direction = direction
+	c.SetPosition(pos)
+	c.SetDirection(direction)
 	return true
 }

@@ -6,9 +6,9 @@ import (
 
 const debug = false
 
-// RecvMessage reads the incoming message length (first two bytes), followed by
+// ReceiveMessage reads the incoming message length (first two bytes), followed by
 // how many bytes the incoming message length is.
-func RecvMessage(c net.Conn) *Message {
+func ReceiveMessage(c net.Conn) *Message {
 	msg := NewMessage()
 	c.Read(msg.Buffer[0:2]) // incoming message length
 	if msg.Length() == 0 {

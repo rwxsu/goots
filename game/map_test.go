@@ -11,7 +11,7 @@ func TestInitializeSector(t *testing.T) {
 	count := 0
 	for offsetX := (uint16)(0); offsetX < 32; offsetX++ {
 		for offsetY := (uint16)(0); offsetY < 32; offsetY++ {
-			tile := m.GetTile(Position{spos.X*32 + offsetX, spos.Y*32 + offsetY, spos.Z})
+			tile := m.Tile(Position{spos.X*32 + offsetX, spos.Y*32 + offsetY, spos.Z})
 			if tile == nil {
 				count++
 			}
@@ -24,11 +24,12 @@ func TestInitializeSector(t *testing.T) {
 
 func TestAddCreatureToSectorCenter(t *testing.T) {
 	m := make(Map)
-	c := Creature{ID: 1}
+	var p Player
+	p.SetID(1)
 	spos := SectorPosition{X: 1, Y: 1, Z: 1}
 	m.InitializeSector(spos, 104)
-	m.AddCreatureToSectorCenter(spos, &c)
-	tile := m.GetTile(Center(spos))
+	m.AddCreatureToSectorCenter(spos, &p)
+	tile := m.Tile(Center(spos))
 	if len(tile.Creatures) == 0 {
 		t.Error("creature not found at sector center")
 	}
@@ -36,24 +37,24 @@ func TestAddCreatureToSectorCenter(t *testing.T) {
 
 func TestMoveCreature(t *testing.T) {
 	m := make(Map)
-	c := Creature{ID: 1}
+	var p Player
+	p.SetID(1)
 	spos := SectorPosition{X: 1, Y: 1, Z: 1}
-	center := Center(spos)
 	m.InitializeSector(spos, 104)
-	m.AddCreatureToSectorCenter(spos, &c)
-	if !m.MoveCreature(&c, Position{c.X, c.Y - 1, c.Z}, North) {
+	m.AddCreatureToSectorCenter(spos, &p)
+	if !m.MoveCreature(&p, Position{p.Position().X, p.Position().Y - 1, p.Position().Z}, North) {
 		t.Error("could not move creature to the north")
 	}
-	if !m.MoveCreature(&c, Position{c.X + 1, c.Y, c.Z}, East) {
+	if !m.MoveCreature(&p, Position{p.Position().X + 1, p.Position().Y, p.Position().Z}, East) {
 		t.Error("could not move creature to the east")
 	}
-	if !m.MoveCreature(&c, Position{c.X, c.Y + 1, c.Z}, South) {
+	if !m.MoveCreature(&p, Position{p.Position().X, p.Position().Y + 1, p.Position().Z}, South) {
 		t.Error("could not move creature to the south")
 	}
-	if !m.MoveCreature(&c, Position{c.X - 1, c.Y, c.Z}, West) {
+	if !m.MoveCreature(&p, Position{p.Position().X - 1, p.Position().Y, p.Position().Z}, West) {
 		t.Error("could not move creature to the west")
 	}
-	if c.Position != center {
-		t.Error("creature did not returned to center")
+	if !p.Position().Equals(Center(spos)) {
+		t.Errorf("creature did not returned to center: expected {%s} got {%s}", Center(spos).String(), p.Position().String())
 	}
 }

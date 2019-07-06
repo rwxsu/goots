@@ -43,6 +43,6 @@ func (cm *ConnectionManager) Delete(tc *TibiaConnection) {
 // TibiaConnection ...
 type TibiaConnection struct {
 	Connection net.Conn
-	Player     *game.Creature
+	Player     *game.Player
 	Map        *game.Map
 }

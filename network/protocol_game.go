@@ -36,7 +36,7 @@ func ParseCommand(tc *TibiaConnection, msg *Message, code uint8) {
 func SendSnapback(tc *TibiaConnection) {
 	msg := NewMessage()
 	msg.WriteUint8(0xb5)
-	msg.WriteUint8(tc.Player.Direction)
+	msg.WriteUint8(tc.Player.Direction())
 	SendMessage(tc.Connection, msg)
 	SendCancelMessage(tc, "Sorry, not possible.")
 }
@@ -50,8 +50,8 @@ func SendCancelMessage(tc *TibiaConnection, str string) {
 func SendMoveCreature(tc *TibiaConnection, direction, code uint8) {
 	var offset game.Offset
 	var width, height uint16
-	from := tc.Player.Position
-	to := tc.Player.Position
+	from := tc.Player.Position()
+	to := tc.Player.Position()
 	switch direction {
 	case game.North:
 		offset.X = -8
@@ -93,22 +93,22 @@ func SendMoveCreature(tc *TibiaConnection, direction, code uint8) {
 }
 
 func SendTurnCreature(tc *TibiaConnection, direction uint8) {
-	tc.Player.Direction = direction
+	tc.Player.SetDirection(direction)
 	msg := NewMessage()
 	msg.WriteUint8(0x6b)
-	AddPosition(msg, tc.Player.Position)
+	AddPosition(msg, tc.Player.Position())
 	msg.WriteUint8(1)
 	msg.WriteUint16(0x63)
-	msg.WriteUint32(tc.Player.ID)
-	msg.WriteUint8(tc.Player.Direction)
+	msg.WriteUint32(tc.Player.ID())
+	msg.WriteUint8(tc.Player.Direction())
 	SendMessage(tc.Connection, msg)
 }
 
 func SendAddCreature(tc *TibiaConnection) {
 	res := NewMessage()
 	res.WriteUint8(0x0a)
-	res.WriteUint32(tc.Player.ID) // ID
-	res.WriteUint16(0x32)         // ?
+	res.WriteUint32(tc.Player.ID()) // ID
+	res.WriteUint16(0x32)           // ?
 	// can report bugs?
 	if tc.Player.Access > game.Regular {
 		res.WriteUint8(0x01)
@@ -121,29 +121,29 @@ func SendAddCreature(tc *TibiaConnection) {
 			res.WriteUint8(0xff)
 		}
 	}
-	tile := tc.Map.GetTile(tc.Player.Position)
+	tile := tc.Map.Tile(tc.Player.Position())
 	tile.AddCreature(tc.Player)
 	res.WriteUint8(0x64)
-	AddPosition(res, tc.Player.Position)
-	AddMapArea(res, tc.Map, tc.Player.Position, game.Offset{X: -8, Y: -6, Z: 0}, 18, 14)
-	AddMagicEffect(res, tc.Player.Position, 0x0a)
+	AddPosition(res, tc.Player.Position())
+	AddMapArea(res, tc.Map, tc.Player.Position(), game.Offset{X: -8, Y: -6, Z: 0}, 18, 14)
+	AddMagicEffect(res, tc.Player.Position(), 0x0a)
 	AddInventory(res, tc.Player)
 	AddStats(res, tc.Player)
 	AddSkills(res, tc.Player)
 	AddWorldLight(res, tc.Player.World)
 	AddCreatureLight(res, tc.Player)
-	AddPlayerMessage(res, fmt.Sprintf("Welcome, %s.", tc.Player.Name), game.PlayerMessageTypeInfo)
+	AddPlayerMessage(res, fmt.Sprintf("Welcome, %s.", tc.Player.Name()), game.PlayerMessageTypeInfo)
 	AddPlayerMessage(res, "TODO: Last Login String 01-01-1970", game.PlayerMessageTypeInfo)
 	AddCreatureLight(res, tc.Player)
 	AddIcons(res, tc.Player)
 	SendMessage(tc.Connection, res)
 }
 
-func AddCreatureLight(msg *Message, c *game.Creature) {
+func AddCreatureLight(msg *Message, c game.Creature) {
 	msg.WriteUint8(0x8d)
-	msg.WriteUint32(c.ID)
-	msg.WriteUint8(c.Light.Level)
-	msg.WriteUint8(c.Light.Color)
+	msg.WriteUint32(c.ID())
+	msg.WriteUint8(c.Light().Level)
+	msg.WriteUint8(c.Light().Color)
 }
 
 func AddWorldLight(msg *Message, w game.World) {
@@ -152,44 +152,44 @@ func AddWorldLight(msg *Message, w game.World) {
 	msg.WriteUint8(w.Light.Color)
 }
 
-func AddIcons(msg *Message, c *game.Creature) {
+func AddIcons(msg *Message, p *game.Player) {
 	msg.WriteUint8(0xa2)
-	msg.WriteUint8(c.Icons)
+	msg.WriteUint8(p.Icons)
 }
 
-func AddSkills(msg *Message, c *game.Creature) {
+func AddSkills(msg *Message, p *game.Player) {
 	msg.WriteUint8(0xa1)
-	msg.WriteUint8(c.Fist.Level)
-	msg.WriteUint8(c.Fist.Percent)
-	msg.WriteUint8(c.Club.Level)
-	msg.WriteUint8(c.Club.Percent)
-	msg.WriteUint8(c.Sword.Level)
-	msg.WriteUint8(c.Sword.Percent)
-	msg.WriteUint8(c.Axe.Level)
-	msg.WriteUint8(c.Axe.Percent)
-	msg.WriteUint8(c.Distance.Level)
-	msg.WriteUint8(c.Distance.Percent)
-	msg.WriteUint8(c.Shielding.Level)
-	msg.WriteUint8(c.Shielding.Percent)
-	msg.WriteUint8(c.Fishing.Level)
-	msg.WriteUint8(c.Fishing.Percent)
+	msg.WriteUint8(p.Fist.Level)
+	msg.WriteUint8(p.Fist.Percent)
+	msg.WriteUint8(p.Club.Level)
+	msg.WriteUint8(p.Club.Percent)
+	msg.WriteUint8(p.Sword.Level)
+	msg.WriteUint8(p.Sword.Percent)
+	msg.WriteUint8(p.Axe.Level)
+	msg.WriteUint8(p.Axe.Percent)
+	msg.WriteUint8(p.Distance.Level)
+	msg.WriteUint8(p.Distance.Percent)
+	msg.WriteUint8(p.Shielding.Level)
+	msg.WriteUint8(p.Shielding.Percent)
+	msg.WriteUint8(p.Fishing.Level)
+	msg.WriteUint8(p.Fishing.Percent)
 }
 
-func AddStats(msg *Message, c *game.Creature) {
+func AddStats(msg *Message, p *game.Player) {
 	msg.WriteUint8(0xa0) // send player stats
-	msg.WriteUint16(c.HealthNow)
-	msg.WriteUint16(c.HealthMax)
-	msg.WriteUint16(c.Cap)
-	msg.WriteUint32(c.Combat.Experience)
-	msg.WriteUint8(c.Combat.Level)
-	msg.WriteUint8(c.Combat.Percent)
-	msg.WriteUint16(c.ManaNow)
-	msg.WriteUint16(c.ManaMax)
-	msg.WriteUint8(c.Magic.Level)
-	msg.WriteUint8(c.Magic.Percent)
+	msg.WriteUint16(p.HealthNow())
+	msg.WriteUint16(p.HealthMax())
+	msg.WriteUint16(p.Cap)
+	msg.WriteUint32(p.Combat.Experience)
+	msg.WriteUint8(p.Combat.Level)
+	msg.WriteUint8(p.Combat.Percent)
+	msg.WriteUint16(p.ManaNow)
+	msg.WriteUint16(p.ManaMax)
+	msg.WriteUint8(p.Magic.Level)
+	msg.WriteUint8(p.Magic.Percent)
 }
 
-func AddInventory(msg *Message, c *game.Creature) {
+func AddInventory(msg *Message, p *game.Player) {
 	msg.WriteUint8(game.SlotEmpty)
 	msg.WriteUint8(game.SlotHead)
 
@@ -236,7 +236,7 @@ func AddMapArea(msg *Message, m *game.Map, pos game.Position, offset game.Offset
 		for z := (int8)(7); z > -1; z-- {
 			for x := (uint16)(0); x < width; x++ {
 				for y := (uint16)(0); y < height; y++ {
-					tile := m.GetTile(game.Position{X: pos.X + x, Y: pos.Y + y, Z: (uint8)(z)})
+					tile := m.Tile(game.Position{X: pos.X + x, Y: pos.Y + y, Z: (uint8)(z)})
 					if tile != nil {
 						if skip > 0 {
 							msg.WriteUint8(skip - 1)
@@ -279,23 +279,23 @@ func AddMagicEffect(msg *Message, pos game.Position, kind uint8) {
 	msg.WriteUint8(kind)
 }
 
-func AddCreature(msg *Message, c *game.Creature) {
+func AddCreature(msg *Message, c game.Creature) {
 	msg.WriteUint16(0x61) // unknown creature
 	msg.WriteUint32(0x00) // something about caching known creatures
-	msg.WriteUint32(c.ID)
-	msg.WriteString(c.Name)
-	msg.WriteUint8((uint8)(c.HealthNow*100/c.HealthMax) + 1)
-	msg.WriteUint8(c.Direction)
-	msg.WriteUint8(c.Outfit.Type)
-	msg.WriteUint8(c.Outfit.Head)
-	msg.WriteUint8(c.Outfit.Body)
-	msg.WriteUint8(c.Outfit.Legs)
-	msg.WriteUint8(c.Outfit.Feet)
-	msg.WriteUint8(c.Light.Level)
-	msg.WriteUint8(c.Light.Color)
-	msg.WriteUint16(c.Speed)
-	msg.WriteUint8(c.Skull)
-	msg.WriteUint8(c.Party)
+	msg.WriteUint32(c.ID())
+	msg.WriteString(c.Name())
+	msg.WriteUint8(game.HealthPercent(c))
+	msg.WriteUint8(c.Direction())
+	msg.WriteUint8(c.Outfit().Type)
+	msg.WriteUint8(c.Outfit().Head)
+	msg.WriteUint8(c.Outfit().Body)
+	msg.WriteUint8(c.Outfit().Legs)
+	msg.WriteUint8(c.Outfit().Feet)
+	msg.WriteUint8(c.Light().Level)
+	msg.WriteUint8(c.Light().Color)
+	msg.WriteUint16(c.Speed())
+	msg.WriteUint8(c.Skull())
+	msg.WriteUint8(c.Party())
 }
 
 // AddTile adds all the tile items and creatures WITHOUT the end of tile

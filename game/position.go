@@ -47,10 +47,10 @@ func (pos *Position) Offset(offset Offset) {
 }
 
 // Equals checks if two positions are the same.
-func (pos *Position) Equals(other Position) bool {
+func (pos Position) Equals(other Position) bool {
 	return pos.X == other.X && pos.Y == other.Y && pos.Z == other.Z
 }
 
-func (pos *Position) String() string {
+func (pos Position) String() string {
 	return fmt.Sprintf("X:%d, Y:%d, Z:%d", pos.X, pos.Y, pos.Z)
 }

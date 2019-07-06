@@ -32,7 +32,7 @@ func main() {
 		tc.Player = player
 		func(c net.Conn) {
 			for {
-				if req := network.RecvMessage(tc.Connection); req != nil {
+				if req := network.ReceiveMessage(tc.Connection); req != nil {
 					code := req.ReadUint8()
 					switch code {
 					case 0x01:
@@ -51,7 +51,7 @@ func main() {
 						}
 						network.SendAddCreature(tc)
 					case 0x14: // logout
-						tc.Map.GetTile(tc.Player.Position).RemoveCreature(tc.Player)
+						tc.Map.Tile(tc.Player.Position()).RemoveCreature(tc.Player)
 						return // breaks out of IIFE
 					default:
 						network.ParseCommand(tc, req, code)
