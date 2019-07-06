@@ -80,6 +80,7 @@ func SendMoveCreature(tc *TibiaConnection, direction, code uint8) {
 	}
 	if !tc.Map.MoveCreature(tc.Player, to, direction) {
 		SendSnapback(tc)
+		return
 	}
 	msg := NewMessage()
 	msg.WriteUint8(0x6d)
