@@ -7,3 +7,6 @@ https://github.com/rwxsu/goot/wiki/Running-Go-OT
 
 #### Contributor guidelines:
 https://github.com/rwxsu/goot/blob/master/docs/contributing.md
+
+**Special thanks to:**
+- [@jo3bingham](https://github.com/jo3bingham) for his amazing insight in how the original client really works
