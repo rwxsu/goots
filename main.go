@@ -54,7 +54,7 @@ func run(c net.Conn, m *game.Map, p *game.Player) {
 					network.SendAddCreature(c, m, p)
 				}
 				return
-			case 0x14: // login
+			case 0x14: // logout
 				m.Tile(p.Position()).RemoveCreature(p)
 				return
 			default: // game commands

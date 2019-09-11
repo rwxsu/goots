@@ -5,7 +5,7 @@ import (
 )
 
 // ReceiveMessage reads the incoming message length (first two bytes), followed by
-// how the message.
+// the message.
 func ReceiveMessage(c net.Conn) *Message {
 	msg := NewMessage()
 	c.Read(msg.Buffer[0:2]) // read incoming message length
