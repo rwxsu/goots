@@ -9,58 +9,57 @@ import (
 )
 
 func main() {
-	const sectors = "data/map/sectors/*"
-	filenames, _ := filepath.Glob(sectors)
+	m := createMap("data/map/sectors/*")
 
-	m := make(game.Map)
-	player := game.NewPlayer(1, "admin", game.Position{X: 32000, Y: 32000, Z: 7})
-
-	for _, fn := range filenames {
-		m.LoadSector(fn)
-	}
-
-	cm := network.NewConnectionManager()
+	p := game.NewPlayer(1, "admin", game.Position{X: 32000, Y: 32000, Z: 7})
 
 	l, _ := net.Listen("tcp", ":7171")
 	defer l.Close()
 
 	for {
 		c, _ := l.Accept()
-		cm.Add(&network.TibiaConnection{Connection: c})
-		tc := cm.ByConnection(c)
-		tc.Map = &m
-		tc.Player = player
-		func(c net.Conn) {
-			for {
-				if req := network.ReceiveMessage(tc.Connection); req != nil {
-					code := req.ReadUint8()
-					switch code {
-					case 0x01:
-						req.SkipBytes(2) // os := req.ReadUint16()
-						if req.ReadUint16() != 740 {
-							network.SendInvalidClientVersion(tc.Connection)
-							return // breaks out of IIFE
-						}
-						network.SendCharacterList(tc.Connection)
-						return // breaks out of IIFE
-					case 0x0a:
-						req.SkipBytes(2) // os := req.ReadUint16()
-						if req.ReadUint16() != 740 {
-							network.SendInvalidClientVersion(tc.Connection)
-							return // breaks out of IIFE
-						}
-						network.SendAddCreature(tc)
-					case 0x14: // logout
-						tc.Map.Tile(tc.Player.Position()).RemoveCreature(tc.Player)
-						return // breaks out of IIFE
-					default:
-						network.ParseCommand(tc, req, code)
-						// continue inside IIFE
-					}
-				}
-			}
-		}(c)
-		cm.Delete(tc)
+		run(c, m, p)
 		c.Close()
+	}
+}
+
+func createMap(sectors string) *game.Map {
+	m := make(game.Map)
+	filenames, _ := filepath.Glob(sectors)
+	for _, fn := range filenames {
+		m.LoadSector(fn)
+	}
+	return &m
+}
+
+func run(c net.Conn, m *game.Map, p *game.Player) {
+	for {
+		req := network.ReceiveMessage(c)
+		if req != nil {
+			code := req.ReadUint8()
+			switch code {
+			case 0x01: // character list
+				req.SkipBytes(2)
+				if req.ReadUint16() != 740 {
+					network.SendInvalidClientVersion(c)
+				} else {
+					network.SendCharacterList(c)
+				}
+				return
+			case 0x0a: // login with selected character
+				req.SkipBytes(2)
+				if req.ReadUint16() != 740 {
+					network.SendInvalidClientVersion(c)
+				} else {
+					network.SendAddCreature(c, m, p)
+				}
+				return
+			case 0x14: // login
+				m.Tile(p.Position()).RemoveCreature(p)
+				return
+			default: // game commands
+				network.ParseCommand(c, m, p, req, code)
+			}
+		}
 	}
 }

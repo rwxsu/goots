@@ -2,56 +2,57 @@ package network
 
 import (
 	"fmt"
+	"net"
 
 	"github.com/rwxsu/goot/game"
 )
 
-func ParseCommand(tc *TibiaConnection, msg *Message, code uint8) {
+func ParseCommand(c net.Conn, m *game.Map, p *game.Player, msg *Message, code uint8) {
 	switch code {
 	case 0x65:
-		SendMoveCreature(tc, game.North, code)
+		SendMoveCreature(c, m, p, game.North, code)
 	case 0x66:
-		SendMoveCreature(tc, game.East, code)
+		SendMoveCreature(c, m, p, game.East, code)
 	case 0x67:
-		SendMoveCreature(tc, game.South, code)
+		SendMoveCreature(c, m, p, game.South, code)
 	case 0x68:
-		SendMoveCreature(tc, game.West, code)
+		SendMoveCreature(c, m, p, game.West, code)
 	case 0x6f:
-		SendTurnCreature(tc, game.North)
+		SendTurnCreature(c, p, game.North)
 	case 0x70:
-		SendTurnCreature(tc, game.East)
+		SendTurnCreature(c, p, game.East)
 	case 0x71:
-		SendTurnCreature(tc, game.South)
+		SendTurnCreature(c, p, game.South)
 	case 0x72:
-		SendTurnCreature(tc, game.West)
+		SendTurnCreature(c, p, game.West)
 	case 0xa0:
-		tc.Player.Tactic.FightMode = msg.ReadUint8()
-		tc.Player.Tactic.ChaseOpponent = msg.ReadUint8()
-		tc.Player.Tactic.AttackPlayers = msg.ReadUint8()
+		p.Tactic.FightMode = msg.ReadUint8()
+		p.Tactic.ChaseOpponent = msg.ReadUint8()
+		p.Tactic.AttackPlayers = msg.ReadUint8()
 	default:
-		SendSnapback(tc)
+		SendSnapback(c, p)
 	}
 }
 
-func SendSnapback(tc *TibiaConnection) {
+func SendSnapback(c net.Conn, p *game.Player) {
 	msg := NewMessage()
 	msg.WriteUint8(0xb5)
-	msg.WriteUint8(tc.Player.Direction())
-	SendMessage(tc.Connection, msg)
-	SendCancelMessage(tc, "Sorry, not possible.")
+	msg.WriteUint8(p.Direction())
+	SendMessage(c, msg)
+	SendCancelMessage(c, "Sorry, not possible.")
 }
 
-func SendCancelMessage(tc *TibiaConnection, str string) {
+func SendCancelMessage(c net.Conn, str string) {
 	msg := NewMessage()
 	AddPlayerMessage(msg, str, game.PlayerMessageTypeCancel)
-	SendMessage(tc.Connection, msg)
+	SendMessage(c, msg)
 }
 
-func SendMoveCreature(tc *TibiaConnection, direction, code uint8) {
+func SendMoveCreature(c net.Conn, m *game.Map, p *game.Player, direction, code uint8) {
 	var offset game.Offset
 	var width, height uint16
-	from := tc.Player.Position()
-	to := tc.Player.Position()
+	from := p.Position()
+	to := p.Position()
 	switch direction {
 	case game.North:
 		offset.X = -8
@@ -78,8 +79,8 @@ func SendMoveCreature(tc *TibiaConnection, direction, code uint8) {
 		height = 14
 		to.X--
 	}
-	if !tc.Map.MoveCreature(tc.Player, to, direction) {
-		SendSnapback(tc)
+	if !m.MoveCreature(p, to, direction) {
+		SendSnapback(c, p)
 		return
 	}
 	msg := NewMessage()
@@ -88,55 +89,55 @@ func SendMoveCreature(tc *TibiaConnection, direction, code uint8) {
 	msg.WriteUint8(0x01) // oldStackPos
 	AddPosition(msg, to)
 	msg.WriteUint8(code)
-	AddMapArea(msg, tc.Map, to, offset, width, height)
-	SendMessage(tc.Connection, msg)
+	AddMapArea(msg, m, to, offset, width, height)
+	SendMessage(c, msg)
 }
 
-func SendTurnCreature(tc *TibiaConnection, direction uint8) {
-	tc.Player.SetDirection(direction)
+func SendTurnCreature(c net.Conn, p *game.Player, direction uint8) {
+	p.SetDirection(direction)
 	msg := NewMessage()
 	msg.WriteUint8(0x6b)
-	AddPosition(msg, tc.Player.Position())
+	AddPosition(msg, p.Position())
 	msg.WriteUint8(1)
 	msg.WriteUint16(0x63)
-	msg.WriteUint32(tc.Player.ID())
-	msg.WriteUint8(tc.Player.Direction())
-	SendMessage(tc.Connection, msg)
+	msg.WriteUint32(p.ID())
+	msg.WriteUint8(p.Direction())
+	SendMessage(c, msg)
 }
 
-func SendAddCreature(tc *TibiaConnection) {
+func SendAddCreature(c net.Conn, m *game.Map, p *game.Player) {
 	res := NewMessage()
 	res.WriteUint8(0x0a)
-	res.WriteUint32(tc.Player.ID()) // ID
-	res.WriteUint16(0x32)           // ?
+	res.WriteUint32(p.ID()) // ID
+	res.WriteUint16(0x32)   // ?
 	// can report bugs?
-	if tc.Player.Access > game.Regular {
+	if p.Access > game.Regular {
 		res.WriteUint8(0x01)
 	} else {
 		res.WriteUint8(0x00)
 	}
-	if tc.Player.Access >= game.Gamemaster {
+	if p.Access >= game.Gamemaster {
 		res.WriteUint8(0x0b)
 		for i := 0; i < 32; i++ {
 			res.WriteUint8(0xff)
 		}
 	}
-	tile := tc.Map.Tile(tc.Player.Position())
-	tile.AddCreature(tc.Player)
+	tile := m.Tile(p.Position())
+	tile.AddCreature(p)
 	res.WriteUint8(0x64)
-	AddPosition(res, tc.Player.Position())
-	AddMapArea(res, tc.Map, tc.Player.Position(), game.Offset{X: -8, Y: -6, Z: 0}, 18, 14)
-	AddMagicEffect(res, tc.Player.Position(), 0x0a)
-	AddInventory(res, tc.Player)
-	AddStats(res, tc.Player)
-	AddSkills(res, tc.Player)
-	AddWorldLight(res, tc.Player.World)
-	AddCreatureLight(res, tc.Player)
-	AddPlayerMessage(res, fmt.Sprintf("Welcome, %s.", tc.Player.Name()), game.PlayerMessageTypeInfo)
+	AddPosition(res, p.Position())
+	AddMapArea(res, m, p.Position(), game.Offset{X: -8, Y: -6, Z: 0}, 18, 14)
+	AddMagicEffect(res, p.Position(), 0x0a)
+	AddInventory(res, p)
+	AddStats(res, p)
+	AddSkills(res, p)
+	AddWorldLight(res, p.World)
+	AddCreatureLight(res, p)
+	AddPlayerMessage(res, fmt.Sprintf("Welcome, %s.", p.Name()), game.PlayerMessageTypeInfo)
 	AddPlayerMessage(res, "TODO: Last Login String 01-01-1970", game.PlayerMessageTypeInfo)
-	AddCreatureLight(res, tc.Player)
-	AddIcons(res, tc.Player)
-	SendMessage(tc.Connection, res)
+	AddCreatureLight(res, p)
+	AddIcons(res, p)
+	SendMessage(c, res)
 }
 
 func AddCreatureLight(msg *Message, c game.Creature) {
@@ -298,8 +299,8 @@ func AddCreature(msg *Message, c game.Creature) {
 	msg.WriteUint8(c.Party())
 }
 
-// AddTile adds all the tile items and creatures WITHOUT the end of tile
-// delimeter (0xSKIP-0xff)
+// AddTile adds all the tile items (including ground) and creatures WITHOUT the end of tile
+// delimeter (0xSKIPCOUNT-0xff)
 func AddTile(msg *Message, tile *game.Tile) {
 	for _, i := range tile.Items {
 		msg.WriteUint16(i.ID)

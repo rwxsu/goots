@@ -6,9 +6,9 @@ import (
 )
 
 type Parser struct {
-	Filename string
 	Buffer   *bytes.Buffer
 	Byte     byte
+	Filename string
 }
 
 // Skip comments and whitespace, advancing buffer
