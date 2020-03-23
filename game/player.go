@@ -52,6 +52,20 @@ type Tactic struct {
 	AttackPlayers uint8
 }
 
+type Outfit struct {
+	Type uint8
+	Head uint8
+	Body uint8
+	Legs uint8
+	Feet uint8
+}
+
+type Skill struct {
+	Experience uint32 // tries
+	Level      uint8
+	Percent    uint8
+}
+
 func NewPlayer(ID uint32, name string, pos Position) *Player {
 	return &Player{
 		Access:    Regular,
