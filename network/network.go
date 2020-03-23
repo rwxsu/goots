@@ -15,9 +15,11 @@ func ReceiveMessage(c net.Conn) *Message {
 	bytes := make([]uint8, msg.Length())
 	c.Read(bytes) // read rest of message
 	msg.Buffer = append(msg.Buffer, bytes...)
+	msg.HexDump("Receive Message")
 	return msg
 }
 
 func SendMessage(c net.Conn, msg *Message) {
 	c.Write(msg.Buffer)
+	msg.HexDump("Send Message")
 }
