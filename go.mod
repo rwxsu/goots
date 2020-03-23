@@ -1,3 +1,3 @@
-module github.com/maksumic/goots
+module github.com/maksumic/ots
 
 go 1.12
