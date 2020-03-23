@@ -3,28 +3,24 @@ package game
 func NewTile(pos Position) *Tile {
 	return &Tile{
 		Position:  pos,
-		Creatures: make(map[uint32]Creature),
+		Players: make(map[uint32]*Player),
 	}
 }
 
 type Tile struct {
 	Position
 	Items     []*Item
-	Creatures map[uint32]Creature
+	Players map[uint32]*Player
 }
 
 func (t *Tile) AddItem(i *Item) {
 	t.Items = append(t.Items, i)
 }
 
-func (t *Tile) FindCreature(c Creature) bool {
-	return t.Creatures[c.ID()] != nil
+func (t *Tile) AddPlayer(p *Player) {
+	t.Players[p.ID()] = p
 }
 
-func (t *Tile) AddCreature(c Creature) {
-	t.Creatures[c.ID()] = c
-}
-
-func (t *Tile) RemoveCreature(c Creature) {
-	delete(t.Creatures, c.ID())
+func (t *Tile) RemovePlayer(p *Player) {
+	delete(t.Players, p.ID())
 }

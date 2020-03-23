@@ -78,43 +78,16 @@ func (m *Map) LoadSector(filename string) {
 	fmt.Printf("[%v]\n", time.Since(begin))
 }
 
-// MoveCreature on map
-func (m *Map) MoveCreature(c Creature, pos Position, direction uint8) bool {
-	from := m.Tile(c.Position())
+// MovePlayer on map
+func (m *Map) MovePlayer(p *Player, pos Position, direction uint8) bool {
+	from := m.Tile(p.Position())
 	to := m.Tile(pos)
 	if from == nil || to == nil {
 		return false
 	}
-	from.RemoveCreature(c)
-	to.AddCreature(c)
-	c.SetPosition(pos)
-	c.SetDirection(direction)
+	from.RemovePlayer(p)
+	to.AddPlayer(p)
+	p.SetPosition(pos)
+	p.SetDirection(direction)
 	return true
 }
-
-// func (m *Map) SetTile(tile *Tile) {
-// 	t := m.Tile(tile.Position)
-// 	if t != nil {
-// 		t = tile
-// 	}
-// }
-
-// InitializeSector a sector with the given ground item id
-// func (m *Map) InitializeSector(spos SectorPosition, groundID uint16) {
-// 	(*m)[spos] = new(Sector)
-// 	for offsetX := (uint16)(0); offsetX < 32; offsetX++ {
-// 		(*m)[spos][offsetX] = new(Column)
-// 		for offsetY := (uint16)(0); offsetY < 32; offsetY++ {
-// 			tile := NewTile(Position{X: spos.X*32 + offsetX, Y: spos.Y*32 + offsetY, Z: spos.Z})
-// 			tile.AddItem(&Item{groundID})
-// 			(*m)[spos][offsetX][offsetY] = tile
-// 		}
-// 	}
-// }
-
-// AddCreatureToSectorCenter adds a creature to the center of the sector
-// func (m *Map) AddCreatureToSectorCenter(spos SectorPosition, c Creature) {
-// 	m.Tile(Center(spos)).AddCreature(c)
-// 	c.SetPosition(Center(spos))
-// 	c.SetDirection(South)
-// }

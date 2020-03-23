@@ -10,21 +10,21 @@ import (
 func ParseCommand(c net.Conn, m *game.Map, p *game.Player, msg *Message, code uint8) {
 	switch code {
 	case 0x65:
-		SendMoveCreature(c, m, p, game.North, code)
+		SendMovePlayer(c, m, p, game.North, code)
 	case 0x66:
-		SendMoveCreature(c, m, p, game.East, code)
+		SendMovePlayer(c, m, p, game.East, code)
 	case 0x67:
-		SendMoveCreature(c, m, p, game.South, code)
+		SendMovePlayer(c, m, p, game.South, code)
 	case 0x68:
-		SendMoveCreature(c, m, p, game.West, code)
+		SendMovePlayer(c, m, p, game.West, code)
 	case 0x6f:
-		SendTurnCreature(c, p, game.North)
+		SendTurnPlayer(c, p, game.North)
 	case 0x70:
-		SendTurnCreature(c, p, game.East)
+		SendTurnPlayer(c, p, game.East)
 	case 0x71:
-		SendTurnCreature(c, p, game.South)
+		SendTurnPlayer(c, p, game.South)
 	case 0x72:
-		SendTurnCreature(c, p, game.West)
+		SendTurnPlayer(c, p, game.West)
 	case 0xa0:
 		p.Tactic.FightMode = msg.ReadUint8()
 		p.Tactic.ChaseOpponent = msg.ReadUint8()
@@ -48,7 +48,7 @@ func SendCancelMessage(c net.Conn, str string) {
 	SendMessage(c, msg)
 }
 
-func SendMoveCreature(c net.Conn, m *game.Map, p *game.Player, direction, code uint8) {
+func SendMovePlayer(c net.Conn, m *game.Map, p *game.Player, direction, code uint8) {
 	var offset game.Offset
 	var width, height uint16
 	from := p.Position()
@@ -79,7 +79,7 @@ func SendMoveCreature(c net.Conn, m *game.Map, p *game.Player, direction, code u
 		height = 14
 		to.X--
 	}
-	if !m.MoveCreature(p, to, direction) {
+	if !m.MovePlayer(p, to, direction) {
 		SendSnapback(c, p)
 		return
 	}
@@ -93,7 +93,7 @@ func SendMoveCreature(c net.Conn, m *game.Map, p *game.Player, direction, code u
 	SendMessage(c, msg)
 }
 
-func SendTurnCreature(c net.Conn, p *game.Player, direction uint8) {
+func SendTurnPlayer(c net.Conn, p *game.Player, direction uint8) {
 	p.SetDirection(direction)
 	msg := NewMessage()
 	msg.WriteUint8(0x6b)
@@ -105,7 +105,7 @@ func SendTurnCreature(c net.Conn, p *game.Player, direction uint8) {
 	SendMessage(c, msg)
 }
 
-func SendAddCreature(c net.Conn, m *game.Map, p *game.Player) {
+func SendAddPlayer(c net.Conn, m *game.Map, p *game.Player) {
 	res := NewMessage()
 	res.WriteUint8(0x0a)
 	res.WriteUint32(p.ID()) // ID
@@ -123,7 +123,7 @@ func SendAddCreature(c net.Conn, m *game.Map, p *game.Player) {
 		}
 	}
 	tile := m.Tile(p.Position())
-	tile.AddCreature(p)
+	tile.AddPlayer(p)
 	res.WriteUint8(0x64)
 	AddPosition(res, p.Position())
 	AddMapArea(res, m, p.Position(), game.Offset{X: -8, Y: -6, Z: 0}, 18, 14)
@@ -132,19 +132,19 @@ func SendAddCreature(c net.Conn, m *game.Map, p *game.Player) {
 	AddStats(res, p)
 	AddSkills(res, p)
 	AddWorldLight(res, p.World)
-	AddCreatureLight(res, p)
+	AddPlayerLight(res, p)
 	AddPlayerMessage(res, fmt.Sprintf("Welcome, %s.", p.Name()), game.PlayerMessageTypeInfo)
 	AddPlayerMessage(res, "TODO: Last Login String 01-01-1970", game.PlayerMessageTypeInfo)
-	AddCreatureLight(res, p)
+	AddPlayerLight(res, p)
 	AddIcons(res, p)
 	SendMessage(c, res)
 }
 
-func AddCreatureLight(msg *Message, c game.Creature) {
+func AddPlayerLight(msg *Message, p *game.Player) {
 	msg.WriteUint8(0x8d)
-	msg.WriteUint32(c.ID())
-	msg.WriteUint8(c.Light().Level)
-	msg.WriteUint8(c.Light().Color)
+	msg.WriteUint32(p.ID())
+	msg.WriteUint8(p.Light().Level)
+	msg.WriteUint8(p.Light().Color)
 }
 
 func AddWorldLight(msg *Message, w game.World) {
@@ -280,12 +280,12 @@ func AddMagicEffect(msg *Message, pos game.Position, kind uint8) {
 	msg.WriteUint8(kind)
 }
 
-func AddCreature(msg *Message, c game.Creature) {
+func AddPlayer(msg *Message, c *game.Player) {
 	msg.WriteUint16(0x61) // unknown creature
 	msg.WriteUint32(0x00) // something about caching known creatures
 	msg.WriteUint32(c.ID())
 	msg.WriteString(c.Name())
-	msg.WriteUint8(game.HealthPercent(c))
+	msg.WriteUint8(c.HealthPercent())
 	msg.WriteUint8(c.Direction())
 	msg.WriteUint8(c.Outfit().Type)
 	msg.WriteUint8(c.Outfit().Head)
@@ -305,8 +305,8 @@ func AddTile(msg *Message, tile *game.Tile) {
 	for _, i := range tile.Items {
 		msg.WriteUint16(i.ID)
 	}
-	for _, c := range tile.Creatures {
-		AddCreature(msg, c)
+	for _, c := range tile.Players {
+		AddPlayer(msg, c)
 	}
 }
 

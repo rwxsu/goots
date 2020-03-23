@@ -50,10 +50,10 @@ func main() {
 				if req.ReadUint16() != 740 {
 					network.SendInvalidClientVersion(c)
 				} else {
-					network.SendAddCreature(c, &m, p)
+					network.SendAddPlayer(c, &m, p)
 				}
 			case 0x14:
-				m.Tile(p.Position()).RemoveCreature(p)
+				m.Tile(p.Position()).RemovePlayer(p)
 				c.Close()
 				c, err = l.Accept()
 				if err != nil {

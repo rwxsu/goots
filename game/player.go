@@ -201,3 +201,7 @@ func (p *Player) SetLight(l Light) {
 func (p *Player) Light() Light {
 	return p.light
 }
+
+func (p *Player) HealthPercent() uint8 {
+	return (uint8)((p.HealthNow() * 100 / p.HealthMax()))
+}
