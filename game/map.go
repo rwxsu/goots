@@ -11,41 +11,14 @@ import (
 	"github.com/maksumic/goot/parser"
 )
 
-// Column 32 tiles (stacked below each other visually)
+// Column consists of 32 tiles (stacked vertically)
 type Column [32]*Tile
 
-// Sector 32*32=256 tiles (32 columns)
+// Sector consists of 32*32=256 tiles (32 columns, stacked horizontally)
 type Sector [32]*Column
 
 // Map is a collection of sectors loaded from data/map/sectors/*.sec
 type Map map[SectorPosition]*Sector
-
-// InitializeSector a sector with the given ground item id
-func (m *Map) InitializeSector(spos SectorPosition, groundID uint16) {
-	(*m)[spos] = new(Sector)
-	for offsetX := (uint16)(0); offsetX < 32; offsetX++ {
-		(*m)[spos][offsetX] = new(Column)
-		for offsetY := (uint16)(0); offsetY < 32; offsetY++ {
-			tile := NewTile(Position{X: spos.X*32 + offsetX, Y: spos.Y*32 + offsetY, Z: spos.Z})
-			tile.AddItem(&Item{groundID})
-			(*m)[spos][offsetX][offsetY] = tile
-		}
-	}
-}
-
-// AddCreatureToSectorCenter adds a creature to the center of the sector
-func (m *Map) AddCreatureToSectorCenter(spos SectorPosition, c Creature) {
-	m.Tile(Center(spos)).AddCreature(c)
-	c.SetPosition(Center(spos))
-	c.SetDirection(South)
-}
-
-func (m *Map) SetTile(tile *Tile) {
-	t := m.Tile(tile.Position)
-	if t != nil {
-		t = tile
-	}
-}
 
 // Tile gets the SectorPosition by dividing the real x and y position by 32.
 // Mod is used to get the remainder, which is the x and y offset.
@@ -118,3 +91,30 @@ func (m *Map) MoveCreature(c Creature, pos Position, direction uint8) bool {
 	c.SetDirection(direction)
 	return true
 }
+
+// func (m *Map) SetTile(tile *Tile) {
+// 	t := m.Tile(tile.Position)
+// 	if t != nil {
+// 		t = tile
+// 	}
+// }
+
+// InitializeSector a sector with the given ground item id
+// func (m *Map) InitializeSector(spos SectorPosition, groundID uint16) {
+// 	(*m)[spos] = new(Sector)
+// 	for offsetX := (uint16)(0); offsetX < 32; offsetX++ {
+// 		(*m)[spos][offsetX] = new(Column)
+// 		for offsetY := (uint16)(0); offsetY < 32; offsetY++ {
+// 			tile := NewTile(Position{X: spos.X*32 + offsetX, Y: spos.Y*32 + offsetY, Z: spos.Z})
+// 			tile.AddItem(&Item{groundID})
+// 			(*m)[spos][offsetX][offsetY] = tile
+// 		}
+// 	}
+// }
+
+// AddCreatureToSectorCenter adds a creature to the center of the sector
+// func (m *Map) AddCreatureToSectorCenter(spos SectorPosition, c Creature) {
+// 	m.Tile(Center(spos)).AddCreature(c)
+// 	c.SetPosition(Center(spos))
+// 	c.SetDirection(South)
+// }

@@ -1,6 +1,7 @@
 package main
 
 import (
+	"log"
 	"net"
 	"path/filepath"
 
@@ -9,56 +10,57 @@ import (
 )
 
 func main() {
-	m := createMap("data/map/sectors/*")
+	m := make(game.Map)
+	filenames, _ := filepath.Glob("data/map/sectors/*")
+	for _, filename := range filenames {
+		m.LoadSector(filename)
+	}
 
+	l, err := net.Listen("tcp", ":7171")
+	if err != nil {
+		panic(err)
+	}
+	
 	p := game.NewPlayer(1, "admin", game.Position{X: 32000, Y: 32000, Z: 7})
 
-	l, _ := net.Listen("tcp", ":7171")
-	defer l.Close()
-
-	for {
-		c, _ := l.Accept()
-		run(c, m, p)
-		c.Close()
+	c, err := l.Accept()
+	if err != nil {
+		log.Println(err)
 	}
-}
 
-func createMap(sectors string) *game.Map {
-	m := make(game.Map)
-	filenames, _ := filepath.Glob(sectors)
-	for _, fn := range filenames {
-		m.LoadSector(fn)
-	}
-	return &m
-}
-
-func run(c net.Conn, m *game.Map, p *game.Player) {
 	for {
 		req := network.ReceiveMessage(c)
 		if req != nil {
 			code := req.ReadUint8()
 			switch code {
-			case 0x01: // character list
+			case 0x01:
 				req.SkipBytes(2)
 				if req.ReadUint16() != 740 {
 					network.SendInvalidClientVersion(c)
 				} else {
 					network.SendCharacterList(c)
 				}
-				return
-			case 0x0a: // login with selected character
+				c.Close()
+				c, err = l.Accept()
+				if err != nil {
+					log.Println(err)
+				}
+			case 0x0a:
 				req.SkipBytes(2)
 				if req.ReadUint16() != 740 {
 					network.SendInvalidClientVersion(c)
 				} else {
-					network.SendAddCreature(c, m, p)
+					network.SendAddCreature(c, &m, p)
 				}
-				return
-			case 0x14: // logout
+			case 0x14:
 				m.Tile(p.Position()).RemoveCreature(p)
-				return
-			default: // game commands
-				network.ParseCommand(c, m, p, req, code)
+				c.Close()
+				c, err = l.Accept()
+				if err != nil {
+					log.Println(err)
+				}
+			default:
+				network.ParseCommand(c, &m, p, req, code)
 			}
 		}
 	}
