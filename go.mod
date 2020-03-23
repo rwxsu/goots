@@ -1,3 +1,3 @@
-module github.com/rwxsu/goot
+module github.com/maksumic/goot
 
 go 1.12
