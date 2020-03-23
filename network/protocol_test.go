@@ -3,7 +3,7 @@ package network
 import (
 	"testing"
 
-	"github.com/rwxsu/goot/game"
+	"github.com/maksumic/goot/game"
 )
 
 func TestAddMapArea(t *testing.T) {

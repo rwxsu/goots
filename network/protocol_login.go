@@ -3,7 +3,7 @@ package network
 import (
 	"net"
 
-	"github.com/rwxsu/goot/game"
+	"github.com/maksumic/goot/game"
 )
 
 func SendInvalidClientVersion(c net.Conn) {

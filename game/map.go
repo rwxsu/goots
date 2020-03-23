@@ -8,7 +8,7 @@ import (
 	"strconv"
 	"time"
 
-	"github.com/rwxsu/goot/parser"
+	"github.com/maksumic/goot/parser"
 )
 
 // Column 32 tiles (stacked below each other visually)

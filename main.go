@@ -4,8 +4,8 @@ import (
 	"net"
 	"path/filepath"
 
-	"github.com/rwxsu/goot/game"
-	"github.com/rwxsu/goot/network"
+	"github.com/maksumic/goot/game"
+	"github.com/maksumic/goot/network"
 )
 
 func main() {

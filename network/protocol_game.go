@@ -4,7 +4,7 @@ import (
 	"fmt"
 	"net"
 
-	"github.com/rwxsu/goot/game"
+	"github.com/maksumic/goot/game"
 )
 
 func ParseCommand(c net.Conn, m *game.Map, p *game.Player, msg *Message, code uint8) {

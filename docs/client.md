@@ -1,7 +1,7 @@
-## movement
+## Movement
 Only FullMap (0x64) and FieldData (0x69) map packets require a position to be written to the network message before the map data.
 
-## stack position
+## Stack position
 The Tibia client is very, very strict about stack position. Items and creatures have different priorities on a tile which determine where they go in the stack.  
 Priority is on a scale of 0-5:  
 0 - ground items  
